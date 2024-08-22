@@ -10,8 +10,23 @@ canvas {
   display: block;
 }
 
-h1 {
+.console {
   position: absolute;
-  color:#ccc;
-  margin: 30px 30px;
+  margin: 20px 20px;
+
+  & h1,h2,h3,h4 {
+    color:#000;
+    text-shadow: -1px -1px 0 #ccc, 1px -1px 0 #ccc, -1px 1px 0 #ccc, 1px 1px 0 #ccc;
+    margin: auto;
+  }
+
+  & #log {
+    color:#fff;
+    text-shadow: -1px -1px 0 #555, 1px -1px 0 #555, -1px 1px 0 #555, 1px 1px 0 #555;
+
+    & p {
+      font-size: 12px;
+      margin: 0.2em;
+    }
+  }
 }

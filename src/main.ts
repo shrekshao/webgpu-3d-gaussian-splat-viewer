@@ -1,5 +1,5 @@
 import './style.css'
-import init from './test-triangle';
+import init from './gaussian-splat-app';
 import { assert } from './utils/util';
 import { Pane } from 'tweakpane';
 
@@ -9,7 +9,9 @@ import { Pane } from 'tweakpane';
     h.innerText = 'WebGPU is not supported in this browser.';
     return;
   }
-  const adapter = await navigator.gpu.requestAdapter();
+  const adapter = await navigator.gpu.requestAdapter({
+    powerPreference: 'high-performance',
+  });
   if (adapter === null) {
     const h = document.querySelector('#title') as HTMLElement;
     h.innerText = 'No adapter is available for WebGPU.';
@@ -29,6 +31,11 @@ import { Pane } from 'tweakpane';
   observer.observe(canvas);
   const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
+  // const data = parse(fetch('/scenes/bicycle/bicycle_30000.cleaned.ply'), PLYLoader).then(ply => {
+  //   console.log(ply.header);
+  // });
+
+
   // Tweakpane: easily adding tweak control for parameters.
   const PARAMS = {
     level: 0,
@@ -46,6 +53,5 @@ import { Pane } from 'tweakpane';
   pane.addInput(PARAMS, 'active');
 
   // Your WebGPU code can go here:
-
-  init(context, device);  // Remove me!
+  init(context, device);
 })();
