@@ -1,7 +1,7 @@
 import { parse } from '@loaders.gl/core';
 import { PLYLoader } from '@loaders.gl/ply';
 import { Float16Array } from '@petamoriken/float16';
-import { mat3n, quatn, vec3n } from 'wgpu-matrix';
+import { mat3n, Quatn, quatn, Vec3n, vec3n } from 'wgpu-matrix';
 import { log, time, timeLog } from './utils/simple-console';
 
 const c_size_float = 2;   // byte size of f16
@@ -26,7 +26,7 @@ const c_size_sh_coef =
   3 * num_coefs * c_size_float // 3 channels (RGB) x 16 coefs
 ;
 
-function build_cov(rot: quatn, scale: vec3n): number[] {
+function build_cov(rot: Quatn, scale: Vec3n): number[] {
   const r = mat3n.fromQuat(rot);
   const s = mat3n.scaling(scale);
   const l = mat3n.mul(r, s);
@@ -36,43 +36,6 @@ function build_cov(rot: quatn, scale: vec3n): number[] {
 
 export type PointCloud = Awaited<ReturnType<typeof load>>;
 
-interface CameraJson {
-  id: number
-  img_name: string
-  width: number
-  height: number
-  position: number[]
-  rotation: number[][]
-  fx: number
-  fy: number
-};
-
-export async function load_camera(url: string): Promise<{position: vec3n, rotation: mat3n}[]> {
-  log(`loading scene camera file... : ${url}`);
-  const response = await fetch(url);
-  const json = await response.json();
-  log(`loaded cameras count: ${json.length}`);
-
-  return json.map((j: CameraJson) => {
-      return {
-        position: vec3n.clone(j.position),
-        // rotation: mat3n.clone(j.rotation.flat()),
-        rotation: mat3n.create(
-          j.rotation[0][0],
-          j.rotation[0][1],
-          j.rotation[0][2],
-          j.rotation[1][0],
-          j.rotation[1][1],
-          j.rotation[1][2],
-          j.rotation[2][0],
-          j.rotation[2][1],
-          j.rotation[2][2],
-        ),
-      };
-      // fy:,
-      // fx:,
-    });
-}
 
 export async function load(url: string, device: GPUDevice) {
   log(`loading ply file... : ${url}`);

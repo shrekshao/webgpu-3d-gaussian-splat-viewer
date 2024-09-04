@@ -178,9 +178,9 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
     let xyz = vec3<f32>(a.x, a.y, b.x);
     var opacity = b.y;
 
-    if any(xyz < render_settings.clipping_box_min.xyz) || any(xyz > render_settings.clipping_box_max.xyz) {
-        return;
-    }
+    // if any(xyz < render_settings.clipping_box_min.xyz) || any(xyz > render_settings.clipping_box_max.xyz) {
+    //     return;
+    // }
 
     var camspace = camera.view * vec4<f32>(xyz, 1.);
     let pos2d = camera.proj * camspace;
@@ -197,14 +197,16 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
 
     let cov_sparse = cov_coefs(idx);
 
-    let walltime = render_settings.walltime;
-    var scale_mod = 0.;
-    let dd = 5. * distance(render_settings.center, xyz) / render_settings.scene_extend;
-    if walltime > dd {
-        scale_mod = smoothstep(0., 1., (walltime - dd));
-    }
+    // let walltime = render_settings.walltime;
+    // var scale_mod = 0.;
+    // let dd = 5. * distance(render_settings.center, xyz) / render_settings.scene_extend;
+    // if walltime > dd {
+    //     scale_mod = smoothstep(0., 1., (walltime - dd));
+    // }
+    // let scaling = render_settings.gaussian_scaling * scale_mod;
+    let scaling = render_settings.gaussian_scaling;
 
-    let scaling = render_settings.gaussian_scaling * scale_mod;
+
     let Vrk = mat3x3<f32>(
         cov_sparse[0], cov_sparse[1], cov_sparse[2],
         cov_sparse[1], cov_sparse[3], cov_sparse[4],
