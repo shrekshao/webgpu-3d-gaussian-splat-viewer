@@ -7,7 +7,8 @@ import {PLYLoader} from '@loaders.gl/ply';
 import { load, PointCloud } from './point-cloud';
 import { Pane } from 'tweakpane';
 import get_renderer from './gaussian-renderer';
-import { load_camera_presets } from './camera';
+import {default as get_pointcloud_renderer} from './point-cloud-renderer';
+import { load_camera_presets, update_camera_uniform } from './camera';
 
 export default async function init(
   context: GPUCanvasContext,
@@ -40,13 +41,46 @@ export default async function init(
 
   const pc = await load(`${url_base}/bicycle_30000.cleaned.ply`, device);
 
-  const renderer = get_renderer(pc, device, presentation_format);
+  // const renderer = get_renderer(pc, device, presentation_format);
+  // update_camera_uniform(camera[0], renderer.camera_buffer, device);
 
+  // function frame() {
+  //   const encoder = device.createCommandEncoder();
+  //   const texture_view = context.getCurrentTexture().createView();
+  //   renderer.preprocess(encoder);
+  //   renderer.sort(encoder);
+  //   renderer.render(encoder, texture_view);
+  //   device.queue.submit([encoder.finish()]);
+  //   requestAnimationFrame(frame);
+  // }
+
+  // requestAnimationFrame(frame);
+
+  document.addEventListener('keydown', (event) => {
+    switch(event.key) {
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        const i = parseInt(event.key);
+        const c = camera[i - 1];
+        console.log(`set to camera preset ${i}`);
+        console.log(c);
+        update_camera_uniform(c, renderer.camera_buffer, device);
+        break;
+    }
+  });
+
+  const renderer = get_pointcloud_renderer(pc, device, presentation_format);
+  update_camera_uniform(camera[0], renderer.camera_buffer, device);
   function frame() {
     const encoder = device.createCommandEncoder();
     const texture_view = context.getCurrentTexture().createView();
-    renderer.preprocess(encoder);
-    renderer.sort(encoder);
     renderer.render(encoder, texture_view);
     device.queue.submit([encoder.finish()]);
     requestAnimationFrame(frame);

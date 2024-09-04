@@ -6,6 +6,8 @@ import { get_sorter } from './sort';
 
 const c_size_render_settings_buffer = 20 * Uint32Array.BYTES_PER_ELEMENT;
 
+const c_workgroup_size_preprocess = 256;
+
 export default function get_renderer(pc: PointCloud, device: GPUDevice, presentation_format: GPUTextureFormat) {
   // ===============================================
   //                 preprocess
@@ -48,7 +50,6 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   });
 
   const camera_buffer = create_camera_uniform_buffer(device);
-  // update_camera_uniform(camera, camera_buffer, device);
 
   const camera_bind_group = device.createBindGroup({
     label: 'camera',
@@ -68,6 +69,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
       {binding: 3, resource: { buffer: sorter.sort_dispatch_indirect_buffer }},
     ],
   });
+  const nulling_sort_info_data = new Uint32Array([0, 8, 8, 8, 8]);
 
 
   // TODO: write buffer, on update tweakpane
@@ -79,11 +81,12 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   const render_settings_array_buffer = new ArrayBuffer(c_size_render_settings_buffer);
   const view = new DataView(render_settings_array_buffer);
   view.setFloat32(8 * 4, 1.0); // gausian_scaling
-  view.setUint32(9 * 4, 0); // show_env_map
-  view.setUint32(10 * 4, 0); // mip_spatting
-  view.setFloat32(11 * 4, 0); // kernel_size
-  view.setFloat32(12 * 4, 0); // walltime
-  view.setFloat32(13 * 4, 0); // scene_extend
+  view.setUint32(9 * 4, 3); // max_sh_deg
+  view.setUint32(10 * 4, 0); // show_env_map
+  view.setUint32(11 * 4, 0); // mip_spatting
+  view.setFloat32(12 * 4, 0); // kernel_size
+  view.setFloat32(13 * 4, 0); // walltime
+  view.setFloat32(14 * 4, 0); // scene_extend
   
   device.queue.writeBuffer(render_settings_buffer, 0, render_settings_array_buffer);
 
@@ -93,32 +96,29 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     entries: [{binding: 0, resource: { buffer: render_settings_buffer }}], // uniform
   });
 
+  const preprocess_workgroup_count = Math.floor((pc.num_points + c_workgroup_size_preprocess - 1) / c_workgroup_size_preprocess);
+
   const preprocess = (encoder: GPUCommandEncoder) => {
+    // write buffer nulling
+    // temp
+    device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_sort_info_data);
+
     const pass = encoder.beginComputePass({ label: 'preprocess' });
     pass.setPipeline(preprocess_pipeline);
     pass.setBindGroup(0, camera_bind_group);
     pass.setBindGroup(1, preprocess_bind_group);
     pass.setBindGroup(2, sort_bind_group);
     pass.setBindGroup(3, render_settings_bind_group);
-
-    const x = Math.floor((pc.num_points + 255) / 256);  // TEMP
-    pass.dispatchWorkgroups(x);
+    pass.dispatchWorkgroups(preprocess_workgroup_count);
     pass.end();
 
-    // TODO: copy buffer to buffer (sortInfo keys_size to draw indirect vertex_count)
-    encoder.copyBufferToBuffer(
-      sorter.sort_info_buffer,
-      0,
-      draw_indirect_buffer,
-      4,
-      4
-    );
   };
 
   // ===============================================
   //                   sort
   // ===============================================
   const sort = (encoder: GPUCommandEncoder) => {
+    
   };
 
 
@@ -137,7 +137,11 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
       module: render_shader,
       entryPoint: 'fs_main',
       targets: [{ format: presentation_format }],
-    }
+    },
+    primitive: {
+      topology: 'triangle-strip',
+      cullMode: 'none', // temp
+    },
   });
 
   const render_splats_bind_group = device.createBindGroup({
@@ -167,9 +171,17 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     size: 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.INDIRECT,
   });
-
+  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
+  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 1063091, 0, 0]));
 
   const render = (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
+    // encoder.copyBufferToBuffer(
+    //   sorter.sort_info_buffer,
+    //   0,
+    //   draw_indirect_buffer,
+    //   Uint32Array.BYTES_PER_ELEMENT,
+    //   Uint32Array.BYTES_PER_ELEMENT
+    // );
     const pass = encoder.beginRenderPass({
       label: 'render',
       colorAttachments: [
@@ -192,5 +204,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     preprocess,
     sort,
     render,
+
+    camera_buffer,
   };
 }

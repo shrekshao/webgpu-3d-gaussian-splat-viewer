@@ -158,7 +158,15 @@ export async function load(url: string, device: GPUDevice) {
     const scale = vec3n.create(Math.exp(scale_0[i3]), Math.exp(scale_1[i3]), Math.exp(scale_2[i3]));
     const cov = build_cov(rot, scale);
     gaussian.set(cov, o + 4);
+
+    // if (i < 5) {
+    //   console.log(opacity[i]);
+    // }
   }
+  // console.log('---------------');
+  // for (let i = 0; i < 30; i++) {
+  //   console.log(gaussian.at(i));
+  // }
   gaussian_3d_buffer.unmap();
 
   // Spherical harmonic function coeffs

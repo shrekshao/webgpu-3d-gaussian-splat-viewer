@@ -58,10 +58,12 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let a = dot(in.screen_pos, in.screen_pos);
-    if a > 2. * CUTOFF {
-        discard;
-    }
-    let b = min(0.99, exp(-a) * in.color.a);
-    return vec4<f32>(in.color.rgb, 1.) * b;
+    // let a = dot(in.screen_pos, in.screen_pos);
+    // if a > 2. * CUTOFF {
+    //     discard;
+    // }
+    // let b = min(0.99, exp(-a) * in.color.a);
+    // return vec4<f32>(in.color.rgb, 1.) * b;
+    // return vec4<f32>(in.position.xyz, 1.);
+    return vec4<f32>(1., 1., 0., 1.);
 }
