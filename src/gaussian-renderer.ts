@@ -171,17 +171,17 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     size: 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.INDIRECT,
   });
-  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
-  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 1063091, 0, 0]));
+  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
+  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 1063091, 0, 0]));
 
   const render = (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
-    // encoder.copyBufferToBuffer(
-    //   sorter.sort_info_buffer,
-    //   0,
-    //   draw_indirect_buffer,
-    //   Uint32Array.BYTES_PER_ELEMENT,
-    //   Uint32Array.BYTES_PER_ELEMENT
-    // );
+    encoder.copyBufferToBuffer(
+      sorter.sort_info_buffer,
+      0,
+      draw_indirect_buffer,
+      Uint32Array.BYTES_PER_ELEMENT,
+      Uint32Array.BYTES_PER_ELEMENT
+    );
     const pass = encoder.beginRenderPass({
       label: 'render',
       colorAttachments: [
@@ -201,9 +201,14 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   };
 
   return {
-    preprocess,
-    sort,
-    render,
+    // preprocess,
+    // sort,
+    // render,
+    frame: (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
+      preprocess(encoder);
+      sort(encoder);
+      render(encoder, texture_view);
+    },
 
     camera_buffer,
   };

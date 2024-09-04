@@ -57,7 +57,9 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   };
 
   return {
-    render,
+    frame: (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
+      render(encoder, texture_view);
+    },
 
     camera_buffer,
   };
