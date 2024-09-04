@@ -88,7 +88,7 @@ export async function load_camera_presets(url: string): Promise<CameraUniform[]>
 
     const fovFactor = 1;
     const fovX = focal2fov(canvasW / 2, canvasW) / fovFactor;
-    const fovY = focal2fov(canvasH, canvasH) / fovFactor;
+    const fovY = -focal2fov(canvasH, canvasH) / fovFactor;
     const proj_matrix = get_projection_matrix(0.1, 1000, fovX, fovY);
     // const proj_matrix = get_projection_matrix(0.1, 1000, Math.PI / 3 * 2, Math.PI / 3);
 
