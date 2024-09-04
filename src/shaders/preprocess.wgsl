@@ -85,7 +85,9 @@ struct RenderSettings {
     kernel_size: f32,
     walltime: f32,
     scene_extend: f32,
+    pad0: u32,
     center: vec3<f32>,
+    pad1: u32,
 }
 
 @group(0) @binding(0)

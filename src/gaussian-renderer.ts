@@ -4,7 +4,7 @@ import proprocess_wgsl from './shaders/preprocess.wgsl';
 import render_wgsl from './shaders/gaussian.wgsl';
 import { get_sorter } from './sort';
 
-const c_size_render_settings_buffer = 18 * Uint32Array.BYTES_PER_ELEMENT;
+const c_size_render_settings_buffer = 20 * Uint32Array.BYTES_PER_ELEMENT;
 
 export default function get_renderer(pc: PointCloud, device: GPUDevice, presentation_format: GPUTextureFormat) {
   // ===============================================
@@ -72,6 +72,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
 
   // TODO: write buffer, on update tweakpane
   const render_settings_buffer = device.createBuffer({
+    label: 'render settings',
     size: c_size_render_settings_buffer,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
   });
@@ -162,6 +163,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   });
 
   const draw_indirect_buffer = device.createBuffer({
+    label: 'draw indirect',
     size: 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.INDIRECT,
   });

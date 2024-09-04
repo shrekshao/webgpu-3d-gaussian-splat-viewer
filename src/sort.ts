@@ -16,10 +16,12 @@ export interface SortStuff {
 function create_ping_pong_buffer(count: number, device: GPUDevice) {
   return {
     sort_indices_buffer: device.createBuffer({
+      label: 'ping pong sort indices',
       size: count * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     }),
     sort_depths_buffer: device.createBuffer({
+      label: 'ping pong sort depths',
       size: count * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     }),
@@ -37,11 +39,13 @@ export function get_sorter(count: number, device: GPUDevice): SortStuff {
   const keys_count_adjusted = keys_per_workgroup * workgroup_count;
 
   const sort_info_buffer = device.createBuffer({
+    label: 'sort info',
     size: 5 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
   });
 
   const sort_dispatch_indirect_buffer = device.createBuffer({
+    label: 'sort info',
     size: 3 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.INDIRECT,
   });
