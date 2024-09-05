@@ -8,12 +8,24 @@ import { load, PointCloud } from './point-cloud';
 import { Pane } from 'tweakpane';
 // import get_renderer from './gaussian-renderer';
 import get_renderer from './point-cloud-renderer';
-import { load_camera_presets, update_camera_uniform } from './camera';
+import { load_camera_presets, set_canvas, update_camera_uniform } from './camera';
 
 export default async function init(
+  canvas: HTMLCanvasElement,
   context: GPUCanvasContext,
   device: GPUDevice
 ) {
+  const observer = new ResizeObserver(() => {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    // Note: You might want to add logic to resize your render target textures here.
+  });
+  observer.observe(canvas);
+  set_canvas(canvas);
+
+
+
   const presentation_format = navigator.gpu.getPreferredCanvasFormat();
   context.configure({
     device,

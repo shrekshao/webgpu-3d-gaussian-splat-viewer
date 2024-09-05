@@ -21,14 +21,6 @@ import { Pane } from 'tweakpane';
 
   const canvas = document.querySelector<HTMLCanvasElement>('#webgpu-canvas');
   assert(canvas !== null);
-  const observer = new ResizeObserver(() => {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    // Note: You might want to add logic to resize your render target textures here.
-
-  });
-  observer.observe(canvas);
   const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
   // const data = parse(fetch('/scenes/bicycle/bicycle_30000.cleaned.ply'), PLYLoader).then(ply => {
@@ -36,5 +28,5 @@ import { Pane } from 'tweakpane';
   // });
 
   // Your WebGPU code can go here:
-  init(context, device);
+  init(canvas, context, device);
 })();

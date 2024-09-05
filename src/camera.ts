@@ -17,12 +17,27 @@ interface CameraJson {
 //   rotation: Mat3,
 // };
 
+let canvas: HTMLCanvasElement;
+
+export function set_canvas(c: HTMLCanvasElement) {
+  canvas = c;
+}
+
 function focal2fov(focal: number, pixels: number): number {
   return 2 * Math.atan(pixels / (2 * focal));
 }
 
+function fov2focal(fov: number, pixels: number): number {
+  return pixels / (2 * Math.tan(fov * 0.5));
+}
+
 function get_view_matrix(r: Mat3, t: Vec3): Mat4 {
   const cam_to_world = mat4.fromMat3(r);
+  // if (mat3.determinant(r) < 0) {
+  //   cam_to_world[0] = -cam_to_world[0];
+  //   cam_to_world[5] = -cam_to_world[5];
+  //   cam_to_world[10] = -cam_to_world[10];
+  // }
   const minus_t = vec3.mulScalar(t, -1);
   mat4.translate(cam_to_world, minus_t, cam_to_world);
   return cam_to_world;
@@ -33,9 +48,9 @@ function get_view_matrix(r: Mat3, t: Vec3): Mat4 {
   // return rt;
 }
 
-// temp
-const canvasW = 960;
-const canvasH = 960;
+// // temp
+// const canvasW = 960;
+// const canvasH = 960;
 
 function get_projection_matrix(znear: number, zfar: number, fov_x: number, fov_y: number) {
   // return mat4.perspective(fov_y, 1, znear, zfar);
@@ -50,13 +65,23 @@ function get_projection_matrix(znear: number, zfar: number, fov_x: number, fov_y
 
   const p = mat4.create();
   p[0] = 2.0 * znear / (right - left);
-  p[5] = 2.0 * znear / (top - bottom);
+  // p[5] = 2.0 * znear / (top - bottom);
+  p[5] = -2.0 * znear / (top - bottom);
   p[2] = (right + left) / (right - left);
   p[6] = (top + bottom) / (top - bottom);
   p[14] = 1.;
   p[10] = zfar / (zfar - znear);
   p[11] = -(zfar * znear) / (zfar - znear);
   mat4.transpose(p, p);
+  
+  // p[0] = 2.0 * znear / (right - left);
+  // p[5] = 2.0 * znear / (top - bottom);
+  // p[8] = (right + left) / (right - left);
+  // p[9] = (top + bottom) / (top - bottom);
+  // p[10] = zfar / (zfar - znear);
+  // p[11] = -(zfar * znear) / (zfar - znear);
+  // p[14] = 1.;
+  // mat4.transpose(p, p);
   return p;
 }
 
@@ -86,22 +111,35 @@ export async function load_camera_presets(url: string): Promise<CameraUniform[]>
     // const proj_matrix = mat4.perspective(Math.PI / 3, 1, 0.2, 1000);
     // const proj_matrix = mat4.identity();
 
-    const fovFactor = 1;
-    const fovX = focal2fov(canvasW / 2, canvasW) / fovFactor;
-    const fovY = -focal2fov(canvasH, canvasH) / fovFactor;
-    const proj_matrix = get_projection_matrix(0.1, 1000, fovX, fovY);
+    // const fovFactor = 1;
+    // const fovFactor = 2;
+    // const fovX = focal2fov(canvas.width / 2, canvas.width) / fovFactor;
+    // const fovY = -focal2fov(canvas.height, canvas.height) / fovFactor;
+    // const fovX = focal2fov(j.fx, canvas.width);
+    // const fovY = focal2fov(j.fy, canvas.height);
+
+    // const fovX = 45 / 180 * Math.PI;
+    const fovY = 45 / 180 * Math.PI;   // magic set
+    // const focal = 0.5 * j.fy / Math.tan(fovY * 0.5);
+    // const fovX = focal2fov(focal, j.fx);
+    const focal = 0.5 * canvas.height / Math.tan(fovY * 0.5);
+    const fovX = focal2fov(focal, canvas.width);
+
+    const proj_matrix = get_projection_matrix(0.01, 100, fovX, fovY);
     // const proj_matrix = get_projection_matrix(0.1, 1000, Math.PI / 3 * 2, Math.PI / 3);
 
+    const viewport_ratio = canvas.width / canvas.height;
 
     return {
       view_matrix: view_matrix,
       view_inv_matrix: mat4.inverse(view_matrix),
       proj_matrix: proj_matrix,
       proj_inv_matrix: mat4.inverse(proj_matrix),
-      focal: vec2.create(j.fx, j.fy),
+      // focal: vec2.create(fov2focal(fovX, canvas.width), fov2focal(fovY, canvas.height)),
+      focal: focal,
 
       // set later based on canvas size
-      viewport: vec2.create(960, 960),   // canvas width, height temp
+      viewport: vec2.create(canvas.width, canvas.height),   // canvas width, height temp
     };
   });
 }
