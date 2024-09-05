@@ -69,8 +69,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
       {binding: 3, resource: { buffer: sorter.sort_dispatch_indirect_buffer }},
     ],
   });
-  const nulling_sort_info_data = new Uint32Array([0, 8, 8, 8, 8]);
-
+  const nulling_data = new Uint32Array([0]);
 
   // TODO: write buffer, on update tweakpane
   const render_settings_buffer = device.createBuffer({
@@ -84,7 +83,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   view.setUint32(9 * 4, 3); // max_sh_deg
   view.setUint32(10 * 4, 0); // show_env_map
   view.setUint32(11 * 4, 0); // mip_spatting
-  view.setFloat32(12 * 4, 0); // kernel_size
+  view.setFloat32(12 * 4, 0.3); // kernel_size
   view.setFloat32(13 * 4, 0); // walltime
   view.setFloat32(14 * 4, 0); // scene_extend
   
@@ -100,8 +99,8 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
 
   const preprocess = (encoder: GPUCommandEncoder) => {
     // write buffer nulling
-    // temp
-    device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_sort_info_data);
+    device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_data);
+    // device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
 
     const pass = encoder.beginComputePass({ label: 'preprocess' });
     pass.setPipeline(preprocess_pipeline);
@@ -139,6 +138,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
       targets: [{ format: presentation_format }],
     },
     primitive: {
+      // topology: 'point-list'
       topology: 'triangle-strip',
       cullMode: 'none', // temp
     },
@@ -171,17 +171,17 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     size: 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.INDIRECT,
   });
-  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
-  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 1063091, 0, 0]));
+  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
+  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 3000, 0, 0]));  // temp test
 
   const render = (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
-    encoder.copyBufferToBuffer(
-      sorter.sort_info_buffer,
-      0,
-      draw_indirect_buffer,
-      Uint32Array.BYTES_PER_ELEMENT,
-      Uint32Array.BYTES_PER_ELEMENT
-    );
+    // encoder.copyBufferToBuffer(
+    //   sorter.sort_info_buffer,
+    //   0,
+    //   draw_indirect_buffer,
+    //   Uint32Array.BYTES_PER_ELEMENT * 1,
+    //   Uint32Array.BYTES_PER_ELEMENT
+    // );
     const pass = encoder.beginRenderPass({
       label: 'render',
       colorAttachments: [

@@ -41,12 +41,15 @@ struct Gaussian {
 }
 
 struct Splat {
-     // 4x f16 packed as u32
+    // 4x f16 packed as u32
+    // vec of the quad
     v_0: u32, v_1: u32,
     // 2x f16 packed as u32
+    // center of the quad
     pos: u32,
     // rgba packed as f16
-    color_0: u32,color_1: u32
+    color_0: u32,
+    color_1: u32
 };
 
 struct DrawIndirect {

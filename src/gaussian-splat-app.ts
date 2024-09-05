@@ -36,7 +36,8 @@ export default async function init(
   // Tweakpane: easily adding tweak control for parameters.
   const params = {
     gaussian_scaling: 1,
-    renderer: 'pointcloud',
+    // renderer: 'pointcloud',
+    renderer: 'gaussian',
   };
 
   const pane = new Pane({
@@ -83,7 +84,8 @@ export default async function init(
     gaussian: gaussian_renderer,
   };
 
-  let renderer = pointcloud_renderer;
+  // let renderer = pointcloud_renderer;
+  let renderer = renderers[params.renderer];
   update_camera_uniform(camera[0], pointcloud_renderer.camera_buffer, device);
   update_camera_uniform(camera[0], gaussian_renderer.camera_buffer, device);
 
