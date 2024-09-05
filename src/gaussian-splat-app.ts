@@ -6,8 +6,8 @@
 import {PLYLoader} from '@loaders.gl/ply';
 import { load, PointCloud } from './point-cloud';
 import { Pane } from 'tweakpane';
-// import get_renderer from './gaussian-renderer';
-import get_renderer from './point-cloud-renderer';
+import { default as get_renderer_gaussian } from './gaussian-renderer';
+import { default as get_renderer_pointcloud } from './point-cloud-renderer';
 import { load_camera_presets, set_canvas, update_camera_uniform } from './camera';
 
 export default async function init(
@@ -36,14 +36,22 @@ export default async function init(
   // Tweakpane: easily adding tweak control for parameters.
   const params = {
     gaussian_scaling: 1,
+    renderer: 'pointcloud',
   };
 
   const pane = new Pane({
     title: 'Config',
     expanded: true,
   });
-
   pane.addInput(params, 'gaussian_scaling', {min: 0, max: 1});
+  pane.addInput(params, 'renderer', {
+    options: {
+      pointcloud: 'pointcloud',
+      gaussian: 'gaussian',
+    }
+  }).on('change', (e) => {
+    renderer = renderers[e.value];
+  });
 
   const url_base = '/scenes/bicycle';
 
@@ -68,6 +76,17 @@ export default async function init(
 
   // requestAnimationFrame(frame);
 
+  const pointcloud_renderer = get_renderer_pointcloud(pc, device, presentation_format);
+  const gaussian_renderer = get_renderer_gaussian(pc, device, presentation_format);
+  const renderers = {
+    pointcloud: pointcloud_renderer,
+    gaussian: gaussian_renderer,
+  };
+
+  let renderer = pointcloud_renderer;
+  update_camera_uniform(camera[0], pointcloud_renderer.camera_buffer, device);
+  update_camera_uniform(camera[0], gaussian_renderer.camera_buffer, device);
+
   document.addEventListener('keydown', (event) => {
     switch(event.key) {
       case '0':
@@ -89,8 +108,6 @@ export default async function init(
     }
   });
 
-  const renderer = get_renderer(pc, device, presentation_format);
-  update_camera_uniform(camera[0], renderer.camera_buffer, device);
   function frame() {
     const encoder = device.createCommandEncoder();
     const texture_view = context.getCurrentTexture().createView();
