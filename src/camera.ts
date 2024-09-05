@@ -91,7 +91,7 @@ export async function load_camera_presets(url: string): Promise<CameraUniform[]>
   const json = await response.json();
   log(`loaded cameras count: ${json.length}`);
 
-  return json.map((j: CameraJson) => {
+  return json.map((j: CameraJson): CameraUniform => {
     const position = vec3.clone(j.position);
     const rotation = mat3.create(...j.rotation.flat());
     // const rotation = mat3.create(
@@ -135,8 +135,9 @@ export async function load_camera_presets(url: string): Promise<CameraUniform[]>
       view_inv_matrix: mat4.inverse(view_matrix),
       proj_matrix: proj_matrix,
       proj_inv_matrix: mat4.inverse(proj_matrix),
+      focal: vec2.create(focal, focal),
       // focal: vec2.create(fov2focal(fovX, canvas.width), fov2focal(fovY, canvas.height)),
-      focal: focal,
+      // focal2: vec2.create(focal, focal),
 
       // set later based on canvas size
       viewport: vec2.create(canvas.width, canvas.height),   // canvas width, height temp
@@ -183,6 +184,11 @@ export function update_camera_uniform(camera: CameraUniform, buffer: GPUBuffer, 
   offset += 2;
   intermediate_float_32_array.set(camera.focal, offset);
   offset += 2;
+
+  // console.log(camera);
+  // console.log(intermediate_float_32_array);
+  // console.log(camera.focal);
+  // console.log(camera.focal2);
   
   device.queue.writeBuffer(buffer, 0, intermediate_float_32_array);
 }

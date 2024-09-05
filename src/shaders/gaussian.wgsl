@@ -50,13 +50,13 @@ fn vs_main(
     let position = vec2<f32>(x, y) * CUTOFF;
 
     let offset = 2. * mat2x2<f32>(v1, v2) * position;
-    // out.position = vec4<f32>(v_center + offset, 0., 1.);
-    // out.screen_pos = position;
+    out.position = vec4<f32>(v_center + offset, 0., 1.);
+    out.screen_pos = position;
 
-    // temp
-    let offset_t = vec2<f32>(x, y) * 0.01;
-    out.position = vec4<f32>(v_center + offset_t, 0., 1.);
-    out.screen_pos = vec2<f32>(v_center + offset);
+    // // temp
+    // let offset_t = vec2<f32>(x, y) * 0.01;
+    // out.position = vec4<f32>(v_center + offset_t, 0., 1.);
+    // out.screen_pos = vec2<f32>(v_center + offset);
 
     out.color = vec4<f32>(unpack2x16float(vertex.color_0), unpack2x16float(vertex.color_1));
     return out;
