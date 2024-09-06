@@ -28,7 +28,7 @@ const c_size_sh_coef =
 
 function build_cov(rot: Quat, scale: Vec3): number[] {
   const r = mat3.fromQuat(rot);
-  // const s = mat3.scaling(scale); // bug in wgpu-matrix 3.0.2
+  // const s = mat3.scaling(scale); // this is 2d scale
   const s = mat3.identity();
   s[0] = scale[0];
   s[5] = scale[1];

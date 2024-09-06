@@ -19,6 +19,6 @@
     "@loaders.gl/ply": "^4.2.2",
     "@petamoriken/float16": "^3.8.7",
     "tweakpane": "^3.1.8",
-    "wgpu-matrix": "^3.0.2"
+    "wgpu-matrix": "^3.0.3"
   }
 }
