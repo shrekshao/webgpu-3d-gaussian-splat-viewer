@@ -1,7 +1,7 @@
 import { parse } from '@loaders.gl/core';
 import { PLYLoader } from '@loaders.gl/ply';
 import { Float16Array } from '@petamoriken/float16';
-import { mat3n, Quatn, quatn, Vec3n, vec3n } from 'wgpu-matrix';
+import { mat3, Quat, quat, Vec3, vec3 } from 'wgpu-matrix';
 import { log, time, timeLog } from './utils/simple-console';
 
 const c_size_float = 2;   // byte size of f16
@@ -26,12 +26,18 @@ const c_size_sh_coef =
   3 * num_coefs * c_size_float // 3 channels (RGB) x 16 coefs
 ;
 
-function build_cov(rot: Quatn, scale: Vec3n): number[] {
-  const r = mat3n.fromQuat(rot);
-  const s = mat3n.scaling(scale);
-  const l = mat3n.mul(r, s);
-  const m = mat3n.mul(l, mat3n.transpose(l));
-  return [m[0], m[1], m[2], m[4], m[5], m[8]];
+function build_cov(rot: Quat, scale: Vec3): number[] {
+  const r = mat3.fromQuat(rot);
+  // const s = mat3.scaling(scale); // bug in wgpu-matrix 3.0.2
+  const s = mat3.identity();
+  s[0] = scale[0];
+  s[5] = scale[1];
+  s[10] = scale[2];
+  const l = mat3.mul(r, s);
+  const m = mat3.mul(l, mat3.transpose(l));
+  // wgpu mat3 has 4x3 elements
+  // [m[0][0], m[0][1], m[0][2], m[1][1], m[1][2], m[2][2]]
+  return [m[0], m[1], m[2], m[5], m[6], m[10]];
 }
 
 export type PointCloud = Awaited<ReturnType<typeof load>>;
@@ -138,15 +144,15 @@ export async function load(url: string, device: GPUDevice) {
   const scale_0 = ply.attributes['scale_0'].value;
   const scale_1 = ply.attributes['scale_1'].value;
   const scale_2 = ply.attributes['scale_2'].value;
-  const rot_0 = ply.attributes['rot_0'].value;
-  const rot_1 = ply.attributes['rot_1'].value;
-  const rot_2 = ply.attributes['rot_2'].value;
-  const rot_3 = ply.attributes['rot_3'].value;
+  const rot_0 = ply.attributes['rot_0'].value;  // w
+  const rot_1 = ply.attributes['rot_1'].value;  // x
+  const rot_2 = ply.attributes['rot_2'].value;  // y
+  const rot_3 = ply.attributes['rot_3'].value;  // z
   const gaussian = new Float16Array(gaussian_3d_buffer.getMappedRange());
   for (let i = 0; i < num_points; i++) {
+  // for (let i = 0; i < 1; i++) {
     const o = i * (c_size_3d_gaussian / c_size_float);
     const i3 = i * 3;
-    const i4 = i * 4;
     // x, y, z position
     gaussian[o + 0] = position[i3];
     gaussian[o + 1] = position[i3+1];
@@ -154,13 +160,18 @@ export async function load(url: string, device: GPUDevice) {
     // opacity
     gaussian[o + 3] = opacity[i];
     // cov, 6x f16
-    const rot = quatn.create(rot_0[i4], rot_1[i4], rot_2[i4], rot_3[i4]);
-    const scale = vec3n.create(Math.exp(scale_0[i3]), Math.exp(scale_1[i3]), Math.exp(scale_2[i3]));
+    const rot = quat.create(rot_1[i], rot_2[i], rot_3[i], rot_0[i]);
+    quat.normalize(rot, rot);
+    // console.log([scale_0[i], scale_1[i], scale_2[i]]);
+    const scale = vec3.create(Math.exp(scale_0[i]), Math.exp(scale_1[i]), Math.exp(scale_2[i]));
     const cov = build_cov(rot, scale);
     gaussian.set(cov, o + 4);
 
-    // if (i < 5) {
-    //   console.log(opacity[i]);
+    // if (i < 3) {
+    //   // console.log(opacity[i]);
+    //   // console.log(scale);
+    //   // console.log(rot);
+    //   console.log(cov);
     // }
   }
   // console.log('---------------');

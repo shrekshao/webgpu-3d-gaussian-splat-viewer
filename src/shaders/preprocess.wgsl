@@ -233,6 +233,7 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
     let T = W * J;
     let cov = transpose(T) * Vrk * T;
 
+    // let kernel_size = KERNEL_SIZE;
     let kernel_size = render_settings.kernel_size;
     if bool(render_settings.mip_spatting) {
         // according to Mip-Splatting by Yu et al. 2023
