@@ -53,9 +53,9 @@ fn vs_main(
     out.position = vec4<f32>(v_center + offset, 0., 1.);
     out.screen_pos = position;
 
-    // // temp
-    // let offset_t = vec2<f32>(x, y) * 0.01;
-    // out.position = vec4<f32>(v_center + offset_t, 0., 1.);
+    // temp
+    let offset_t = vec2<f32>(x, y) * 0.01;
+    out.position = vec4<f32>(v_center + offset_t, 0., 1.);
     // out.screen_pos = vec2<f32>(v_center + offset);
 
     out.color = vec4<f32>(unpack2x16float(vertex.color_0), unpack2x16float(vertex.color_1));
@@ -64,13 +64,14 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // let a = dot(in.screen_pos, in.screen_pos);
-    // if a > 2. * CUTOFF {
-    //     discard;
-    // }
-    // let b = min(0.99, exp(-a) * in.color.a);
-    // return vec4<f32>(in.color.rgb, 1.) * b;
-    return vec4<f32>(in.color.rgb, 1.);
+    let a = dot(in.screen_pos, in.screen_pos);
+    if a > 2. * CUTOFF {
+        discard;
+    }
+    let b = min(0.99, exp(-a) * in.color.a);
+    return vec4<f32>(in.color.rgb, 1.) * b;
+
+    // return vec4<f32>(in.color.rgb, 1.);
     // return vec4<f32>(in.position.xyz, 1.);
     // return vec4<f32>(1., 0., 0., 1.);
 }

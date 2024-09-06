@@ -202,14 +202,14 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
 
     let cov_sparse = cov_coefs(idx);
 
-    // let walltime = render_settings.walltime;
-    // var scale_mod = 0.;
+    let walltime = render_settings.walltime;
+    var scale_mod = 0.;
     // let dd = 5. * distance(render_settings.center, xyz) / render_settings.scene_extend;
     // if walltime > dd {
     //     scale_mod = smoothstep(0., 1., (walltime - dd));
     // }
-    // let scaling = render_settings.gaussian_scaling * scale_mod;
-    let scaling = render_settings.gaussian_scaling;
+    let scaling = render_settings.gaussian_scaling * scale_mod;
+    // let scaling = render_settings.gaussian_scaling;
 
 
     let Vrk = mat3x3<f32>(

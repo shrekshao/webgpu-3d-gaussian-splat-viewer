@@ -100,7 +100,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   const preprocess = (encoder: GPUCommandEncoder) => {
     // write buffer nulling
     device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_data);
-    // device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
+    device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
 
     const pass = encoder.beginComputePass({ label: 'preprocess' });
     pass.setPipeline(preprocess_pipeline);
@@ -111,6 +111,13 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     pass.dispatchWorkgroups(preprocess_workgroup_count);
     pass.end();
 
+    encoder.copyBufferToBuffer(
+      sorter.sort_info_buffer,
+      0,
+      draw_indirect_buffer,
+      Uint32Array.BYTES_PER_ELEMENT * 1,
+      Uint32Array.BYTES_PER_ELEMENT
+    );
   };
 
   // ===============================================
@@ -171,17 +178,12 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     size: 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.INDIRECT,
   });
-  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
-  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 3000, 0, 0]));  // temp test
+  device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 0, 0, 0]));
+  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, 3000, 0, 0]));  // temp test
+  // device.queue.writeBuffer(draw_indirect_buffer, 0, new Uint32Array([4, Math.floor(pc.num_points * 0.5) , 0, 0]));  // temp test
 
   const render = (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
-    // encoder.copyBufferToBuffer(
-    //   sorter.sort_info_buffer,
-    //   0,
-    //   draw_indirect_buffer,
-    //   Uint32Array.BYTES_PER_ELEMENT * 1,
-    //   Uint32Array.BYTES_PER_ELEMENT
-    // );
+
     const pass = encoder.beginRenderPass({
       label: 'render',
       colorAttachments: [
