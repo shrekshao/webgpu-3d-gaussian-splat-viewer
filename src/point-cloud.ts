@@ -150,7 +150,6 @@ export async function load(url: string, device: GPUDevice) {
   const rot_3 = ply.attributes['rot_3'].value;  // z
   const gaussian = new Float16Array(gaussian_3d_buffer.getMappedRange());
   for (let i = 0; i < num_points; i++) {
-  // for (let i = 0; i < 1; i++) {
     const o = i * (c_size_3d_gaussian / c_size_float);
     const i3 = i * 3;
     // x, y, z position
@@ -188,22 +187,31 @@ export async function load(url: string, device: GPUDevice) {
     mappedAtCreation: true,
   });
   const sh = new Float16Array(sh_buffer.getMappedRange());
+  // const sh = new Float32Array(sh_buffer.getMappedRange());  // temp test
+
   // dc_0, dc_1, dc_2, rest_0, rest_1, ...
   const sh_coefs = new Array(num_coefs * 3);
   sh_coefs[0] = ply.attributes['f_dc_0'].value;
   sh_coefs[1] = ply.attributes['f_dc_1'].value;
   sh_coefs[2] = ply.attributes['f_dc_2'].value;
-  for (let i = 0; i < 45; i++) {
-    sh_coefs[3 + i] = ply.attributes[`f_rest_${i}`].value;
+  for (let o = 0; o < 3 * (num_coefs - 1); o++) {
+    sh_coefs[3 + o] = ply.attributes[`f_rest_${o}`].value;
   }
 
-  // r0, g0, b0, r1, r2, r3, ..., g1, ... g15, b1, ..., b15
+  // input: sh_coefs: r1, r2, ..., r15, g1, ..., g15, b1, ..., b15
+  // output: sh: r0, g0, b0, r1, g1, b1, ..., r15, g15, b15
   for (let i = 0; i < num_points; i++) {
-    const output_offset = i * num_coefs;
-    for (let order = 0; order < num_coefs - 1; order++) {
-      const input_offset = order * 3;
+    const output_offset = i * num_coefs * 3;
+
+    sh[output_offset + 0] = sh_coefs[0][i];
+    sh[output_offset + 1] = sh_coefs[1][i];
+    sh[output_offset + 2] = sh_coefs[2][i];
+
+    for (let order = 1; order < num_coefs; order++) {
+      const order_offset = order * 3;
       for (let c = 0; c < 3; c++) {
-        sh[output_offset + input_offset + c] = sh_coefs[input_offset + c][i];
+        const channel_offset = 3 + (num_coefs - 1) * c + order - 1;
+        sh[output_offset + order_offset + c] = sh_coefs[channel_offset][i];
       }
     }
   }
