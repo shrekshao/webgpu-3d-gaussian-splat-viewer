@@ -145,10 +145,25 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     fragment: {
       module: render_shader,
       entryPoint: 'fs_main',
-      targets: [{ format: presentation_format }],
+      targets: [{
+        format: presentation_format,
+        // premultiplied alpha blending
+        // (1 * src) + ((1 - src_alpha) * dst)
+        blend: {
+          color: {
+            operation: 'add',
+            srcFactor: 'one',
+            dstFactor: 'one-minus-src-alpha',
+          },
+          alpha: {
+            operation: 'add',
+            srcFactor: 'one',
+            dstFactor: 'one-minus-src-alpha',
+          },
+        },
+      }],
     },
     primitive: {
-      // topology: 'point-list'
       topology: 'triangle-strip',
       cullMode: 'none', // temp
     },
