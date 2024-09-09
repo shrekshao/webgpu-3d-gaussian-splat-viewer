@@ -120,11 +120,11 @@ var<uniform> render_settings: RenderSettings;
 
 /// reads the ith sh coef from the vertex buffer
 fn sh_coef(splat_idx: u32, c_idx: u32) -> vec3<f32> {
-    let a = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 0u) / 2u])[(c_idx * 3u + 0u) % 2u];
-    let b = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 1u) / 2u])[(c_idx * 3u + 1u) % 2u];
-    let c = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 2u) / 2u])[(c_idx * 3u + 2u) % 2u];
+    let r = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 0u) / 2u])[(c_idx * 3u + 0u) % 2u];
+    let g = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 1u) / 2u])[(c_idx * 3u + 1u) % 2u];
+    let b = unpack2x16float(sh_coefs[splat_idx][(c_idx * 3u + 2u) / 2u])[(c_idx * 3u + 2u) % 2u];
     return vec3<f32>(
-        a, b, c
+        r, g, b
     );
 }
 
@@ -208,8 +208,9 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
     // if walltime > dd {
     //     scale_mod = smoothstep(0., 1., (walltime - dd));
     // }
-    let scaling = render_settings.gaussian_scaling * scale_mod;
-    // let scaling = render_settings.gaussian_scaling;
+    // let scaling = render_settings.gaussian_scaling * scale_mod;
+    let scaling = render_settings.gaussian_scaling;
+    // let scaling = 1.;
 
 
     let Vrk = mat3x3<f32>(

@@ -79,13 +79,16 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   });
   const render_settings_array_buffer = new ArrayBuffer(c_size_render_settings_buffer);
   const view = new DataView(render_settings_array_buffer);
-  view.setFloat32(8 * 4, 1.0); // gausian_scaling
-  view.setUint32(9 * 4, 3); // max_sh_deg
-  view.setUint32(10 * 4, 0); // show_env_map
-  view.setUint32(11 * 4, 0); // mip_spatting
-  view.setFloat32(12 * 4, 0.3); // kernel_size
-  view.setFloat32(13 * 4, 0); // walltime
-  view.setFloat32(14 * 4, 0); // scene_extend
+  // Pitfalls: Typed Arrays use little-endian
+  view.setFloat32(8 * 4, 1.0, true); // gausian_scaling
+  view.setUint32(9 * 4, 3, true); // max_sh_deg
+  view.setUint32(10 * 4, 0, true); // show_env_map
+  view.setUint32(11 * 4, 0, true); // mip_spatting
+  view.setFloat32(12 * 4, 0.3, true); // kernel_size
+  view.setFloat32(13 * 4, 0, true); // walltime
+  view.setFloat32(14 * 4, 0, true); // scene_extend
+  // console.log(view.getFloat32(8 * 4));
+  // console.log(new Float32Array(render_settings_array_buffer));
   
   device.queue.writeBuffer(render_settings_buffer, 0, render_settings_array_buffer);
 
