@@ -127,7 +127,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   //                   sort
   // ===============================================
   const sort = (encoder: GPUCommandEncoder) => {
-    
+    sorter.sort(encoder);
   };
 
 

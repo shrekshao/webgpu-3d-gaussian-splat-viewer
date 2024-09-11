@@ -24,4 +24,11 @@ return value;
 export function unreachable(msg?: string): never {
 throw new Error(msg);
 }
+
+/** Round `n` up to the next multiple of `alignment` (inclusive). */
+export function align(n: number, alignment: number): number {
+  assert(Number.isInteger(n) && n >= 0, 'n must be a non-negative integer');
+  assert(Number.isInteger(alignment) && alignment > 0, 'alignment must be a positive integer');
+  return Math.ceil(n / alignment) * alignment;
+}
   

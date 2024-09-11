@@ -62,20 +62,14 @@ export default async function init(
 
   const pc = await load(`${url_base}/bicycle_30000.cleaned.ply`, device);
 
-  // const renderer = get_renderer(pc, device, presentation_format);
-  // update_camera_uniform(camera[0], renderer.camera_buffer, device);
-
-  // function frame() {
-  //   const encoder = device.createCommandEncoder();
-  //   const texture_view = context.getCurrentTexture().createView();
-  //   renderer.preprocess(encoder);
-  //   renderer.sort(encoder);
-  //   renderer.render(encoder, texture_view);
-  //   device.queue.submit([encoder.finish()]);
-  //   requestAnimationFrame(frame);
-  // }
-
-  // requestAnimationFrame(frame);
+  // // TEMP TEST: skipping long-time loading
+  // const num_points = 1063091;
+  // const pc = {
+  //   num_points: num_points,
+  //   gaussian_3d_buffer: device.createBuffer({size: num_points * 20, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE }),
+  //   sh_buffer: device.createBuffer({size: 96, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE }),
+  //   splat_2d_buffer: device.createBuffer({size: num_points * 20, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE }),
+  // };
 
   const pointcloud_renderer = get_renderer_pointcloud(pc, device, presentation_format);
   const gaussian_renderer = get_renderer_gaussian(pc, device, presentation_format);
@@ -84,7 +78,6 @@ export default async function init(
     gaussian: gaussian_renderer,
   };
 
-  // let renderer = pointcloud_renderer;
   let renderer = renderers[params.renderer];
   update_camera_uniform(camera[0], pointcloud_renderer.camera_buffer, device);
   update_camera_uniform(camera[0], gaussian_renderer.camera_buffer, device);
