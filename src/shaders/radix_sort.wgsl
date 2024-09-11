@@ -1,13 +1,13 @@
 // shader implementing gpu radix sort.
 
-override histogram_sg_size = 16u;
+override histogram_sg_size = 32u;
 override histogram_wg_size = 256u;
 override rs_radix_log2 = 8u;  // 8 bit radices
 override rs_radix_size = 1u << rs_radix_log2;    // 256 entries into the radix table
 override rs_keyval_size = 32u / rs_radix_log2;
 const rs_histogram_block_rows = 15u;
 const rs_scatter_block_rows = rs_histogram_block_rows;
-const rs_mem_dwords = 8u;
+// const rs_mem_dwords = 4096u;
 
 override prefix_wg_size = 1u << 7u; // one thread operates on 2 prefixes at the same time
 override scatter_wg_size = 1u << 8u;

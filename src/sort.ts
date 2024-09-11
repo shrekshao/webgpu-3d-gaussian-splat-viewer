@@ -24,16 +24,18 @@ export interface SortStuff {
 }
 
 
-function create_ping_pong_buffer(count: number, device: GPUDevice) {
+function create_ping_pong_buffer(adjusted_count: number, keysize: number, device: GPUDevice) {
   return {
+    // payload
     sort_indices_buffer: device.createBuffer({
       label: 'ping pong sort indices',
-      size: count * 4,
+      size: keysize * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     }),
+    // key
     sort_depths_buffer: device.createBuffer({
       label: 'ping pong sort depths',
-      size: count * 4,
+      size: adjusted_count * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     }),
   };
@@ -53,20 +55,33 @@ const c_radix_log2 = 8;
 const c_histogram_block_rows = 15;
 
 const C = {
-  histogram_sg_size: 16,
+  histogram_sg_size: 32,
   histogram_wg_size: 256,
   rs_radix_log2: 8,
   rs_radix_size: 1 << c_radix_log2,
   rs_keyval_size: 32 / c_radix_log2,
   rs_histogram_block_rows: c_histogram_block_rows,
   rs_scatter_block_rows: c_histogram_block_rows,
+
+  prefix_wg_size: 1 << 7,
+  scatter_wg_size: 1 << 8,
+
+  rs_mem_dwords: 0,
 };
+const c_rs_smem_phase_2 = C.rs_radix_size + C.rs_scatter_block_rows * C.scatter_wg_size;
+C.rs_mem_dwords = c_rs_smem_phase_2;
+
+console.log(C);
 
 // const c_size_sort_info = 5 * 4;
 function create_pipelines(device: GPUDevice) {
+  // storage array length cannot use override, use string concat const instead
   const module = device.createShaderModule({
     label: 'radix sort',
-    code: radix_sort_wgsl,
+    // code: radix_sort_wgsl,
+    code: `const rs_mem_dwords = ${C.rs_mem_dwords}u;
+    ${radix_sort_wgsl}
+    `
   });
 
   const bind_group_layout = device.createBindGroupLayout({
@@ -230,9 +245,16 @@ function create_histogram_buffer(keysize: number, device: GPUDevice) {
 }
 
 export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
+  // const keys_per_workgroup = C.histogram_wg_size * C.rs_histogram_block_rows;
+  // const workgroup_count = (keysize + keys_per_workgroup - 1) / keys_per_workgroup;
+  // // const keys_count_adjusted = keys_per_workgroup * workgroup_count;
+  // const keys_count_adjusted = 1067520;
+
   const keys_per_workgroup = C.histogram_wg_size * C.rs_histogram_block_rows;
-  const workgroup_count = (keysize + keys_per_workgroup - 1) / keys_per_workgroup;
-  const keys_count_adjusted = keys_per_workgroup * workgroup_count;
+  const keys_count_adjusted = (Math.floor((keysize + keys_per_workgroup - 1) / keys_per_workgroup) + 1) * keys_per_workgroup;
+
+  console.log(`keys count adjusted: ${keys_count_adjusted}`); // histogram count
+  console.log(`key size: ${keysize}`);
 
   const sort_info_buffer = device.createBuffer({
     label: 'sort info',
@@ -249,14 +271,16 @@ export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
   const pipelines = create_pipelines(device);
 
   const ping_pong = [
-    create_ping_pong_buffer(keys_count_adjusted, device),
-    create_ping_pong_buffer(keys_count_adjusted, device),
+    create_ping_pong_buffer(keys_count_adjusted, keysize, device),
+    create_ping_pong_buffer(keys_count_adjusted, keysize, device),
   ];
 
   const histogram_buffer = create_histogram_buffer(keysize, device);
 
   
   const { scatter_blocks_ru, count_ru_histo } = get_scatter_histogram_sizes(keysize);
+  console.log(scatter_blocks_ru);
+  console.log(count_ru_histo);
   device.queue.writeBuffer(sort_info_buffer, 0, new Uint32Array([keysize, count_ru_histo, 4, 0, 0]));
   device.queue.writeBuffer(sort_dispatch_indirect_buffer, 0, new Uint32Array([scatter_blocks_ru, 1, 1]));
 

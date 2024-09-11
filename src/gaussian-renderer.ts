@@ -114,13 +114,13 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     pass.dispatchWorkgroups(preprocess_workgroup_count);
     pass.end();
 
-    encoder.copyBufferToBuffer(
-      sorter.sort_info_buffer,
-      0,
-      draw_indirect_buffer,
-      Uint32Array.BYTES_PER_ELEMENT * 1,
-      Uint32Array.BYTES_PER_ELEMENT
-    );
+    // encoder.copyBufferToBuffer(
+    //   sorter.sort_info_buffer,
+    //   0,
+    //   draw_indirect_buffer,
+    //   Uint32Array.BYTES_PER_ELEMENT * 1,
+    //   Uint32Array.BYTES_PER_ELEMENT
+    // );
   };
 
   // ===============================================
@@ -128,6 +128,14 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   // ===============================================
   const sort = (encoder: GPUCommandEncoder) => {
     sorter.sort(encoder);
+
+    encoder.copyBufferToBuffer(
+      sorter.sort_info_buffer,
+      0,
+      draw_indirect_buffer,
+      Uint32Array.BYTES_PER_ELEMENT * 1,
+      Uint32Array.BYTES_PER_ELEMENT
+    );
   };
 
 

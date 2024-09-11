@@ -17,7 +17,11 @@ import { Pane } from 'tweakpane';
     h.innerText = 'No adapter is available for WebGPU.';
     return;
   }
-  const device = await adapter.requestDevice();
+  // console.log(adapter.limits.maxComputeWorkgroupStorageSize);
+  // assert(adapter.limits.maxComputeWorkgroupStorageSize >= );
+  const device = await adapter.requestDevice({
+    requiredLimits: { maxComputeWorkgroupStorageSize: adapter.limits.maxComputeWorkgroupStorageSize },
+  });
 
   const canvas = document.querySelector<HTMLCanvasElement>('#webgpu-canvas');
   assert(canvas !== null);
