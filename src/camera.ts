@@ -12,30 +12,6 @@ interface CameraJson {
   fy: number
 };
 
-// type CameraPreset = {
-//   position: Vec3,
-//   rotation: Mat3,
-// };
-
-let canvas: HTMLCanvasElement;
-let fovY = 45 / 180 * Math.PI;   // magic number
-let focal = 1;
-let fovX = 45 / 180 * Math.PI;
-const viewport = vec2.create();
-
-export function on_update_canvas_size() {
-  focal = 0.5 * canvas.height / Math.tan(fovY * 0.5);
-  fovX = focal2fov(focal, canvas.width);
-  viewport[0] = canvas.width;
-  viewport[1] = canvas.height;
-  const viewport_ratio = canvas.width / canvas.height;
-}
-
-export function set_canvas(c: HTMLCanvasElement) {
-  canvas = c;
-  on_update_canvas_size();
-}
-
 function focal2fov(focal: number, pixels: number): number {
   return 2 * Math.atan(pixels / (2 * focal));
 }
@@ -98,32 +74,24 @@ function get_projection_matrix(znear: number, zfar: number, fov_x: number, fov_y
   return p;
 }
 
-interface Camera {
+interface CameraPreset {
   position: Vec3,
   rotation: Mat3,
 }
 
-export async function load_camera_presets(url: string): Promise<Camera[]> {
+export async function load_camera_presets(url: string): Promise<CameraPreset[]> {
   log(`loading scene camera file... : ${url}`);
   const response = await fetch(url);
   const json = await response.json();
   log(`loaded cameras count: ${json.length}`);
 
-  return json.map((j: CameraJson): Camera => {
+  return json.map((j: CameraJson): CameraPreset => {
     const position = vec3.clone(j.position);
     const rotation = mat3.create(...j.rotation.flat());
 
     return {
       position,
       rotation,
-      // view_matrix: view_matrix,
-      // view_inv_matrix: mat4.inverse(view_matrix),
-      // proj_matrix: proj_matrix,
-      // proj_inv_matrix: mat4.inverse(proj_matrix),
-      // focal: vec2.create(focal, focal),
-
-      // // set later based on canvas size
-      // viewport: vec2.create(canvas.width, canvas.height),   // canvas width, height temp
     };
   });
 }
@@ -152,29 +120,69 @@ export function create_camera_uniform_buffer(device: GPUDevice) {
 
 const intermediate_float_32_array = new Float32Array(c_size_camera_uniform / Float32Array.BYTES_PER_ELEMENT);
 
-export function update_camera_uniform(camera: Camera, buffer: GPUBuffer, device: GPUDevice) {
-  let offset = 0;
+export class Camera {
+  constructor(
+    public readonly canvas: HTMLCanvasElement,
+    private readonly device: GPUDevice,
+  ) {
+    this.uniform_buffer = create_camera_uniform_buffer(device);
+    this.on_update_canvas();
+  }
 
-  const view_matrix = get_view_matrix(camera.rotation, camera.position);
-  const proj_matrix = get_projection_matrix(0.01, 100, fovX, fovY);
-
-  intermediate_float_32_array.set(view_matrix, offset);
-  offset += 16;
-  intermediate_float_32_array.set(mat4.inverse(view_matrix), offset);
-  offset += 16;
-  intermediate_float_32_array.set(proj_matrix, offset);
-  offset += 16;
-  intermediate_float_32_array.set(mat4.inverse(proj_matrix), offset);
-  offset += 16;
-  intermediate_float_32_array.set(viewport, offset);
-  offset += 2;
-  intermediate_float_32_array.set(vec2.create(focal, focal), offset);
-  offset += 2;
-
-  // console.log(camera);
-  // console.log(intermediate_float_32_array);
-  // console.log(camera.focal);
-  // console.log(camera.focal2);
+  on_update_canvas(): void {
+    const focal = 0.5 * this.canvas.height / Math.tan(this.fovY * 0.5);
+    this.focal[0] = focal;
+    this.focal[1] = focal;
+    this.fovX = focal2fov(focal, this.canvas.width);
+    this.viewport[0] = this.canvas.width;
+    this.viewport[1] = this.canvas.height;
+    // const viewport_ratio = this.canvas.width / this.canvas.height;
+  }
   
-  device.queue.writeBuffer(buffer, 0, intermediate_float_32_array);
-}
+  readonly uniform_buffer: GPUBuffer;
+  
+  private position: Vec3 = vec3.create();
+  private rotation: Mat3 = mat3.create();
+  private fovY: number = 45 / 180 * Math.PI;
+  private fovX: number;
+  private focal: Vec2 = vec2.create();
+  private viewport: Vec2 = vec2.create();
+
+  private view_matrix: Mat4 = mat4.identity();
+  private proj_matrix: Mat4 = mat4.identity();
+
+  update_buffer(): void {
+    let offset = 0;
+
+    this.view_matrix = get_view_matrix(this.rotation, this.position);
+    this.proj_matrix = get_projection_matrix(0.01, 100, this.fovX, this.fovY);
+
+    intermediate_float_32_array.set(this.view_matrix, offset);
+    offset += 16;
+    intermediate_float_32_array.set(mat4.inverse(this.view_matrix), offset);
+    offset += 16;
+    intermediate_float_32_array.set(this.proj_matrix, offset);
+    offset += 16;
+    intermediate_float_32_array.set(mat4.inverse(this.proj_matrix), offset);
+    offset += 16;
+    intermediate_float_32_array.set(this.viewport, offset);
+    offset += 2;
+    intermediate_float_32_array.set(this.focal, offset);
+    offset += 2;
+
+    this.device.queue.writeBuffer(this.uniform_buffer, 0, intermediate_float_32_array);
+  }
+  set_preset(preset: CameraPreset): void {
+    this.position = preset.position;
+    this.rotation = preset.rotation;
+    this.update_buffer();
+  }
+
+};
+
+// export function create_camera(device: GPUDevice): Camera {
+
+//   return {
+//     camera_buffer: create_camera_uniform_buffer(device),
+//   }
+// }

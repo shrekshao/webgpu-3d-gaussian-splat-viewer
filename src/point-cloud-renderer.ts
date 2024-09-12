@@ -2,7 +2,11 @@ import { create_camera_uniform_buffer, update_camera_uniform } from './camera';
 import { PointCloud } from './point-cloud';
 import pointcloud_wgsl from './shaders/point_cloud.wgsl';
 
-export default function get_renderer(pc: PointCloud, device: GPUDevice, presentation_format: GPUTextureFormat) {
+export default function get_renderer(
+  pc: PointCloud,
+  device: GPUDevice,
+  presentation_format: GPUTextureFormat,
+  camera_buffer: GPUBuffer) {
   const render_shader = device.createShaderModule({code: pointcloud_wgsl});
   const render_pipeline = device.createRenderPipeline({
     label: 'render',
@@ -21,7 +25,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     },
   });
 
-  const camera_buffer = create_camera_uniform_buffer(device);
+  // const camera_buffer = create_camera_uniform_buffer(device);
 
   const camera_bind_group = device.createBindGroup({
     label: 'point cloud camera',

@@ -8,25 +8,23 @@ import { load, PointCloud } from './point-cloud';
 import { Pane } from 'tweakpane';
 import { default as get_renderer_gaussian } from './gaussian-renderer';
 import { default as get_renderer_pointcloud } from './point-cloud-renderer';
-import { load_camera_presets, on_update_canvas_size, set_canvas, update_camera_uniform } from './camera';
+import { Camera, load_camera_presets } from './camera';
 
 export default async function init(
   canvas: HTMLCanvasElement,
   context: GPUCanvasContext,
   device: GPUDevice
 ) {
-  let initialized = false;
+  // const camera_buffer = create_camera_uniform_buffer(device);
+  const camera = new Camera(canvas, device);
+
   const observer = new ResizeObserver(() => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
-    on_update_canvas_size();
-    if (initialized) {
-      update_camera_uniform(cur_camera, renderer.camera_buffer, device);
-    }
+    camera.on_update_canvas();
   });
   observer.observe(canvas);
-  set_canvas(canvas);
 
   const presentation_format = navigator.gpu.getPreferredCanvasFormat();
   context.configure({
@@ -38,7 +36,7 @@ export default async function init(
   const url_base = '/scenes/bicycle';
   
   const cameras = await load_camera_presets(`${url_base}/cameras.json`);
-  let cur_camera = cameras[0];
+  camera.set_preset(cameras[0]);
 
   // Tweakpane: easily adding tweak control for parameters.
   const params = {
@@ -59,10 +57,7 @@ export default async function init(
     }
   }).on('change', (e) => {
     renderer = renderers[e.value];
-    update_camera_uniform(cur_camera, renderer.camera_buffer, device);
   });
-  
-  // console.log(cur_camera);
 
   const pc = await load(`${url_base}/bicycle_30000.cleaned.ply`, device);
 
@@ -75,18 +70,14 @@ export default async function init(
   //   splat_2d_buffer: device.createBuffer({size: num_points * 20, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE }),
   // };
 
-  const pointcloud_renderer = get_renderer_pointcloud(pc, device, presentation_format);
-  const gaussian_renderer = get_renderer_gaussian(pc, device, presentation_format);
+  const pointcloud_renderer = get_renderer_pointcloud(pc, device, presentation_format, camera.uniform_buffer);
+  const gaussian_renderer = get_renderer_gaussian(pc, device, presentation_format, camera.uniform_buffer);
   const renderers = {
     pointcloud: pointcloud_renderer,
     gaussian: gaussian_renderer,
   };
 
   let renderer = renderers[params.renderer];
-  update_camera_uniform(cur_camera, pointcloud_renderer.camera_buffer, device);
-  update_camera_uniform(cur_camera, gaussian_renderer.camera_buffer, device);
-
-  initialized = true;
 
   document.addEventListener('keydown', (event) => {
     switch(event.key) {
@@ -101,10 +92,8 @@ export default async function init(
       case '8':
       case '9':
         const i = parseInt(event.key);
-        cur_camera = cameras[i];
         console.log(`set to camera preset ${i}`);
-        // console.log(c);
-        update_camera_uniform(cur_camera, renderer.camera_buffer, device);
+        camera.set_preset(cameras[i]);
         break;
     }
   });

@@ -8,7 +8,11 @@ const c_size_render_settings_buffer = 20 * Uint32Array.BYTES_PER_ELEMENT;
 
 const c_workgroup_size_preprocess = 256;
 
-export default function get_renderer(pc: PointCloud, device: GPUDevice, presentation_format: GPUTextureFormat) {
+export default function get_renderer(
+  pc: PointCloud,
+  device: GPUDevice,
+  presentation_format: GPUTextureFormat,
+  camera_buffer: GPUBuffer) {
   // ===============================================
   //                 preprocess
   // ===============================================
@@ -49,7 +53,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
     ]
   });
 
-  const camera_buffer = create_camera_uniform_buffer(device);
+  // const camera_buffer = create_camera_uniform_buffer(device);
 
   const camera_bind_group = device.createBindGroup({
     label: 'camera',
