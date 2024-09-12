@@ -9,6 +9,7 @@ import { Pane } from 'tweakpane';
 import { default as get_renderer_gaussian } from './gaussian-renderer';
 import { default as get_renderer_pointcloud } from './point-cloud-renderer';
 import { Camera, load_camera_presets } from './camera';
+import { CameraControl } from './camera-control';
 
 export default async function init(
   canvas: HTMLCanvasElement,
@@ -17,6 +18,7 @@ export default async function init(
 ) {
   // const camera_buffer = create_camera_uniform_buffer(device);
   const camera = new Camera(canvas, device);
+  const control = new CameraControl(camera);
 
   const observer = new ResizeObserver(() => {
     canvas.width = canvas.clientWidth;
