@@ -18,9 +18,22 @@ interface CameraJson {
 // };
 
 let canvas: HTMLCanvasElement;
+let fovY = 45 / 180 * Math.PI;   // magic number
+let focal = 1;
+let fovX = 45 / 180 * Math.PI;
+const viewport = vec2.create();
+
+export function on_update_canvas_size() {
+  focal = 0.5 * canvas.height / Math.tan(fovY * 0.5);
+  fovX = focal2fov(focal, canvas.width);
+  viewport[0] = canvas.width;
+  viewport[1] = canvas.height;
+  const viewport_ratio = canvas.width / canvas.height;
+}
 
 export function set_canvas(c: HTMLCanvasElement) {
   canvas = c;
+  on_update_canvas_size();
 }
 
 function focal2fov(focal: number, pixels: number): number {
@@ -66,7 +79,7 @@ function get_projection_matrix(znear: number, zfar: number, fov_x: number, fov_y
   const p = mat4.create();
   p[0] = 2.0 * znear / (right - left);
   // p[5] = 2.0 * znear / (top - bottom);
-  p[5] = -2.0 * znear / (top - bottom);
+  p[5] = -2.0 * znear / (top - bottom);   // flip Y
   p[2] = (right + left) / (right - left);
   p[6] = (top + bottom) / (top - bottom);
   p[14] = 1.;
@@ -85,62 +98,32 @@ function get_projection_matrix(znear: number, zfar: number, fov_x: number, fov_y
   return p;
 }
 
-export async function load_camera_presets(url: string): Promise<CameraUniform[]> {
+interface Camera {
+  position: Vec3,
+  rotation: Mat3,
+}
+
+export async function load_camera_presets(url: string): Promise<Camera[]> {
   log(`loading scene camera file... : ${url}`);
   const response = await fetch(url);
   const json = await response.json();
   log(`loaded cameras count: ${json.length}`);
 
-  return json.map((j: CameraJson): CameraUniform => {
+  return json.map((j: CameraJson): Camera => {
     const position = vec3.clone(j.position);
     const rotation = mat3.create(...j.rotation.flat());
-    // const rotation = mat3.create(
-    //   j.rotation[0][0],
-    //   j.rotation[0][1],
-    //   j.rotation[0][2],
-    //   j.rotation[1][0],
-    //   j.rotation[1][1],
-    //   j.rotation[1][2],
-    //   j.rotation[2][0],
-    //   j.rotation[2][1],
-    //   j.rotation[2][2],
-    // );
-    const view_matrix = get_view_matrix(rotation, position);
-
-    // const proj_matrix = mat4.perspective(j.fy, 1, 0.2, 1000);
-    // const proj_matrix = mat4.perspective(Math.PI / 3, 1, 0.2, 1000);
-    // const proj_matrix = mat4.identity();
-
-    // const fovFactor = 1;
-    // const fovFactor = 2;
-    // const fovX = focal2fov(canvas.width / 2, canvas.width) / fovFactor;
-    // const fovY = -focal2fov(canvas.height, canvas.height) / fovFactor;
-    // const fovX = focal2fov(j.fx, canvas.width);
-    // const fovY = focal2fov(j.fy, canvas.height);
-
-    // const fovX = 45 / 180 * Math.PI;
-    const fovY = 45 / 180 * Math.PI;   // magic set
-    // const focal = 0.5 * j.fy / Math.tan(fovY * 0.5);
-    // const fovX = focal2fov(focal, j.fx);
-    const focal = 0.5 * canvas.height / Math.tan(fovY * 0.5);
-    const fovX = focal2fov(focal, canvas.width);
-
-    const proj_matrix = get_projection_matrix(0.01, 100, fovX, fovY);
-    // const proj_matrix = get_projection_matrix(0.1, 1000, Math.PI / 3 * 2, Math.PI / 3);
-
-    const viewport_ratio = canvas.width / canvas.height;
 
     return {
-      view_matrix: view_matrix,
-      view_inv_matrix: mat4.inverse(view_matrix),
-      proj_matrix: proj_matrix,
-      proj_inv_matrix: mat4.inverse(proj_matrix),
-      focal: vec2.create(focal, focal),
-      // focal: vec2.create(fov2focal(fovX, canvas.width), fov2focal(fovY, canvas.height)),
-      // focal2: vec2.create(focal, focal),
+      position,
+      rotation,
+      // view_matrix: view_matrix,
+      // view_inv_matrix: mat4.inverse(view_matrix),
+      // proj_matrix: proj_matrix,
+      // proj_inv_matrix: mat4.inverse(proj_matrix),
+      // focal: vec2.create(focal, focal),
 
-      // set later based on canvas size
-      viewport: vec2.create(canvas.width, canvas.height),   // canvas width, height temp
+      // // set later based on canvas size
+      // viewport: vec2.create(canvas.width, canvas.height),   // canvas width, height temp
     };
   });
 }
@@ -169,20 +152,23 @@ export function create_camera_uniform_buffer(device: GPUDevice) {
 
 const intermediate_float_32_array = new Float32Array(c_size_camera_uniform / Float32Array.BYTES_PER_ELEMENT);
 
-export function update_camera_uniform(camera: CameraUniform, buffer: GPUBuffer, device: GPUDevice) {
+export function update_camera_uniform(camera: Camera, buffer: GPUBuffer, device: GPUDevice) {
   let offset = 0;
 
-  intermediate_float_32_array.set(camera.view_matrix, offset);
+  const view_matrix = get_view_matrix(camera.rotation, camera.position);
+  const proj_matrix = get_projection_matrix(0.01, 100, fovX, fovY);
+
+  intermediate_float_32_array.set(view_matrix, offset);
   offset += 16;
-  intermediate_float_32_array.set(camera.view_inv_matrix, offset);
+  intermediate_float_32_array.set(mat4.inverse(view_matrix), offset);
   offset += 16;
-  intermediate_float_32_array.set(camera.proj_matrix, offset);
+  intermediate_float_32_array.set(proj_matrix, offset);
   offset += 16;
-  intermediate_float_32_array.set(camera.proj_inv_matrix, offset);
+  intermediate_float_32_array.set(mat4.inverse(proj_matrix), offset);
   offset += 16;
-  intermediate_float_32_array.set(camera.viewport, offset);
+  intermediate_float_32_array.set(viewport, offset);
   offset += 2;
-  intermediate_float_32_array.set(camera.focal, offset);
+  intermediate_float_32_array.set(vec2.create(focal, focal), offset);
   offset += 2;
 
   // console.log(camera);

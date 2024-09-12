@@ -71,7 +71,7 @@ const C = {
 const c_rs_smem_phase_2 = C.rs_radix_size + C.rs_scatter_block_rows * C.scatter_wg_size;
 C.rs_mem_dwords = c_rs_smem_phase_2;
 
-console.log(C);
+// console.log(C);
 
 // const c_size_sort_info = 5 * 4;
 function create_pipelines(device: GPUDevice) {

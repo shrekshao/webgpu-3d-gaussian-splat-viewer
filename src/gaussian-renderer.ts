@@ -83,12 +83,13 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
   view.setFloat32(8 * 4, 1.0, true); // gausian_scaling
   view.setUint32(9 * 4, 3, true); // max_sh_deg
   view.setUint32(10 * 4, 0, true); // show_env_map
-  view.setUint32(11 * 4, 0, true); // mip_spatting
+  view.setUint32(11 * 4, 0, true); // mip_splatting
   view.setFloat32(12 * 4, 0.3, true); // kernel_size
   view.setFloat32(13 * 4, 0, true); // walltime
   view.setFloat32(14 * 4, 0, true); // scene_extend
   // console.log(view.getFloat32(8 * 4));
-  // console.log(new Float32Array(render_settings_array_buffer));
+  console.log(new Float32Array(render_settings_array_buffer));
+  console.log(new Uint32Array(render_settings_array_buffer));
   
   device.queue.writeBuffer(render_settings_buffer, 0, render_settings_array_buffer);
 
@@ -217,6 +218,7 @@ export default function get_renderer(pc: PointCloud, device: GPUDevice, presenta
           view: texture_view,
           loadOp: 'clear',
           storeOp: 'store',
+          clearValue: [0, 0, 0, 0]
         }
       ],
     });

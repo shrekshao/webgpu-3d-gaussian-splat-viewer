@@ -8,23 +8,25 @@ import { load, PointCloud } from './point-cloud';
 import { Pane } from 'tweakpane';
 import { default as get_renderer_gaussian } from './gaussian-renderer';
 import { default as get_renderer_pointcloud } from './point-cloud-renderer';
-import { load_camera_presets, set_canvas, update_camera_uniform } from './camera';
+import { load_camera_presets, on_update_canvas_size, set_canvas, update_camera_uniform } from './camera';
 
 export default async function init(
   canvas: HTMLCanvasElement,
   context: GPUCanvasContext,
   device: GPUDevice
 ) {
+  let initialized = false;
   const observer = new ResizeObserver(() => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
-    // Note: You might want to add logic to resize your render target textures here.
+    on_update_canvas_size();
+    if (initialized) {
+      update_camera_uniform(cur_camera, renderer.camera_buffer, device);
+    }
   });
   observer.observe(canvas);
   set_canvas(canvas);
-
-
 
   const presentation_format = navigator.gpu.getPreferredCanvasFormat();
   context.configure({
@@ -32,6 +34,11 @@ export default async function init(
     format: presentation_format,
     alphaMode: 'opaque',
   });
+
+  const url_base = '/scenes/bicycle';
+  
+  const cameras = await load_camera_presets(`${url_base}/cameras.json`);
+  let cur_camera = cameras[0];
 
   // Tweakpane: easily adding tweak control for parameters.
   const params = {
@@ -52,13 +59,10 @@ export default async function init(
     }
   }).on('change', (e) => {
     renderer = renderers[e.value];
+    update_camera_uniform(cur_camera, renderer.camera_buffer, device);
   });
-
-  const url_base = '/scenes/bicycle';
-
   
-  const camera = await load_camera_presets(`${url_base}/cameras.json`);
-  console.log(camera[0]);
+  // console.log(cur_camera);
 
   const pc = await load(`${url_base}/bicycle_30000.cleaned.ply`, device);
 
@@ -79,8 +83,10 @@ export default async function init(
   };
 
   let renderer = renderers[params.renderer];
-  update_camera_uniform(camera[0], pointcloud_renderer.camera_buffer, device);
-  update_camera_uniform(camera[0], gaussian_renderer.camera_buffer, device);
+  update_camera_uniform(cur_camera, pointcloud_renderer.camera_buffer, device);
+  update_camera_uniform(cur_camera, gaussian_renderer.camera_buffer, device);
+
+  initialized = true;
 
   document.addEventListener('keydown', (event) => {
     switch(event.key) {
@@ -95,10 +101,10 @@ export default async function init(
       case '8':
       case '9':
         const i = parseInt(event.key);
-        const c = camera[i];
+        cur_camera = cameras[i];
         console.log(`set to camera preset ${i}`);
-        console.log(c);
-        update_camera_uniform(c, renderer.camera_buffer, device);
+        // console.log(c);
+        update_camera_uniform(cur_camera, renderer.camera_buffer, device);
         break;
     }
   });
