@@ -210,6 +210,8 @@ function get_scatter_histogram_sizes(keysize: number) {
   };
 }
 
+const num_pass = 4;
+
 // caclulates and allocates a buffer that is sufficient for holding all needed information for
 // sorting. This includes the histograms and the temporary scatter buffer
 function create_histogram_buffer(keysize: number, device: GPUDevice) {
@@ -279,9 +281,10 @@ export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
 
   
   const { scatter_blocks_ru, count_ru_histo } = get_scatter_histogram_sizes(keysize);
+  console.log(keysize);
   console.log(scatter_blocks_ru);
   console.log(count_ru_histo);
-  device.queue.writeBuffer(sort_info_buffer, 0, new Uint32Array([keysize, count_ru_histo, 4, 0, 0]));
+  device.queue.writeBuffer(sort_info_buffer, 0, new Uint32Array([keysize, count_ru_histo, num_pass, 0, 0]));
   device.queue.writeBuffer(sort_dispatch_indirect_buffer, 0, new Uint32Array([scatter_blocks_ru, 1, 1]));
 
   const bind_group = device.createBindGroup({

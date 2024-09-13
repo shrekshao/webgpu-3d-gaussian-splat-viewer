@@ -1,8 +1,8 @@
-import { create_camera_uniform_buffer, update_camera_uniform } from './camera';
 import { PointCloud } from './point-cloud';
 import proprocess_wgsl from './shaders/preprocess.wgsl';
 import render_wgsl from './shaders/gaussian.wgsl';
-import { get_sorter } from './sort';
+// import { get_sorter } from './sort';
+import { get_sorter } from './radix-sort';
 
 const c_size_render_settings_buffer = 20 * Uint32Array.BYTES_PER_ELEMENT;
 
@@ -61,16 +61,45 @@ export default function get_renderer(
     entries: [{binding: 0, resource: { buffer: camera_buffer }}],
   });
 
-  const sorter = get_sorter(pc.num_points, device);
+  
+
+  const sort_info_buffer = device.createBuffer({
+    label: 'sort info',
+    size: 5 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+  });
+
+  const sort_dispatch_indirect_buffer = device.createBuffer({
+    label: 'sort dispatch indirect',
+    size: 3 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.INDIRECT,
+  });
+
+  const sort_depths_buffer = device.createBuffer({
+    label: 'ping pong sort depths',
+    size: pc.num_points * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+  });
+  const sort_indices_buffer = device.createBuffer({
+    label: 'ping pong sort depths',
+    size: pc.num_points * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+  });
+
+  const sorter = get_sorter(pc, device, sort_depths_buffer, sort_indices_buffer);
 
   const sort_bind_group = device.createBindGroup({
     label: 'sort',
     layout: preprocess_pipeline.getBindGroupLayout(2),
     entries: [
-      {binding: 0, resource: { buffer: sorter.sort_info_buffer }},
-      {binding: 1, resource: { buffer: sorter.ping_pong[0].sort_depths_buffer }},
-      {binding: 2, resource: { buffer: sorter.ping_pong[0].sort_indices_buffer }},
-      {binding: 3, resource: { buffer: sorter.sort_dispatch_indirect_buffer }},
+      {binding: 0, resource: { buffer: sort_info_buffer }},
+      {binding: 1, resource: { buffer: sort_depths_buffer }},
+      {binding: 2, resource: { buffer: sort_indices_buffer }},
+      {binding: 3, resource: { buffer: sort_dispatch_indirect_buffer }},
+      // {binding: 0, resource: { buffer: sorter.sort_info_buffer }},
+      // {binding: 1, resource: { buffer: sorter.ping_pong[0].sort_depths_buffer }},
+      // {binding: 2, resource: { buffer: sorter.ping_pong[0].sort_indices_buffer }},
+      // {binding: 3, resource: { buffer: sorter.sort_dispatch_indirect_buffer }},
     ],
   });
   const nulling_data = new Uint32Array([0]);
@@ -107,8 +136,10 @@ export default function get_renderer(
 
   const preprocess = (encoder: GPUCommandEncoder) => {
     // write buffer nulling
-    device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_data);
-    device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
+    device.queue.writeBuffer(sort_info_buffer, 0, nulling_data);
+    device.queue.writeBuffer(sort_dispatch_indirect_buffer, 0, nulling_data);
+    // device.queue.writeBuffer(sorter.sort_info_buffer, 0, nulling_data);
+    // device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
 
     const pass = encoder.beginComputePass({ label: 'preprocess' });
     pass.setPipeline(preprocess_pipeline);
@@ -135,7 +166,8 @@ export default function get_renderer(
     sorter.sort(encoder);
 
     encoder.copyBufferToBuffer(
-      sorter.sort_info_buffer,
+      sort_info_buffer,
+      // sorter.sort_info_buffer,
       0,
       draw_indirect_buffer,
       Uint32Array.BYTES_PER_ELEMENT * 1,
@@ -200,7 +232,8 @@ export default function get_renderer(
     label: 'gaussian splats indices',
     layout: render_pipeline.getBindGroupLayout(1),
     entries: [
-      {binding: 4, resource: { buffer: sorter.ping_pong[0].sort_indices_buffer }},
+      // {binding: 4, resource: { buffer: sorter.ping_pong[0].sort_indices_buffer }},
+      {binding: 4, resource: { buffer: sort_indices_buffer }},
     ],
   });
 
