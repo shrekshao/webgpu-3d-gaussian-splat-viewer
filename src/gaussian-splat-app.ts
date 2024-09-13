@@ -36,7 +36,9 @@ export default async function init(
   });
 
   const url_base = '/scenes/bicycle';
-  
+  const url_model = `${url_base}/bicycle_30000.cleaned.ply`;
+  // const url_base = '/scenes/bonsai';
+  // const url_model = `${url_base}/bonsai_30000.ply`;
   const cameras = await load_camera_presets(`${url_base}/cameras.json`);
   camera.set_preset(cameras[0]);
 
@@ -61,7 +63,7 @@ export default async function init(
     renderer = renderers[e.value];
   });
 
-  const pc = await load(`${url_base}/bicycle_30000.cleaned.ply`, device);
+  const pc = await load(url_model, device);
 
   // // TEMP TEST: skipping long-time loading
   // const num_points = 1063091;
