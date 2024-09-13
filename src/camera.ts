@@ -123,6 +123,8 @@ export class Camera {
     this.viewport[0] = this.canvas.width;
     this.viewport[1] = this.canvas.height;
     // const viewport_ratio = this.canvas.width / this.canvas.height;
+
+    this.update_buffer();
   }
   
   readonly uniform_buffer: GPUBuffer;
