@@ -31,4 +31,10 @@ export function align(n: number, alignment: number): number {
   assert(Number.isInteger(alignment) && alignment > 0, 'alignment must be a positive integer');
   return Math.ceil(n / alignment) * alignment;
 }
-  
+
+export function sigmoid(x: number): number {
+  if (x >= 0.) {
+    return 1. / (1. + Math.exp(-x))
+  }
+  return  Math.exp(x) / (1. + Math.exp(x))
+}

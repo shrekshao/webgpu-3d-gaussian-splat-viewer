@@ -3,6 +3,7 @@ import { PLYLoader } from '@loaders.gl/ply';
 import { Float16Array } from '@petamoriken/float16';
 import { mat3, Quat, quat, Vec3, vec3 } from 'wgpu-matrix';
 import { log, time, timeLog } from './utils/simple-console';
+import { sigmoid } from './utils/util';
 
 const c_size_float = 2;   // byte size of f16
 // const c_size_float = 4;   // byte size of f32
@@ -157,7 +158,7 @@ export async function load(url: string, device: GPUDevice) {
     gaussian[o + 1] = position[i3+1];
     gaussian[o + 2] = position[i3+2];
     // opacity
-    gaussian[o + 3] = opacity[i];
+    gaussian[o + 3] = sigmoid(opacity[i]);
     // cov, 6x f16
     const rot = quat.create(rot_1[i], rot_2[i], rot_3[i], rot_0[i]);
     quat.normalize(rot, rot);
