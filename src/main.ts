@@ -1,7 +1,6 @@
 import './style.css'
 import init from './gaussian-splat-app';
 import { assert } from './utils/util';
-import { Pane } from 'tweakpane';
 
 (async () => {
   if (navigator.gpu === undefined) {
@@ -18,7 +17,6 @@ import { Pane } from 'tweakpane';
     return;
   }
   // console.log(adapter.limits.maxComputeWorkgroupStorageSize);
-  // assert(adapter.limits.maxComputeWorkgroupStorageSize >= );
   const device = await adapter.requestDevice({
     requiredLimits: { maxComputeWorkgroupStorageSize: adapter.limits.maxComputeWorkgroupStorageSize },
   });
@@ -27,10 +25,5 @@ import { Pane } from 'tweakpane';
   assert(canvas !== null);
   const context = canvas.getContext('webgpu') as GPUCanvasContext;
 
-  // const data = parse(fetch('/scenes/bicycle/bicycle_30000.cleaned.ply'), PLYLoader).then(ply => {
-  //   console.log(ply.header);
-  // });
-
-  // Your WebGPU code can go here:
   init(canvas, context, device);
 })();

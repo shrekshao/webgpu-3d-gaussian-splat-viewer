@@ -1,12 +1,12 @@
-import { create_camera_uniform_buffer, update_camera_uniform } from './camera';
 import { PointCloud } from './point-cloud';
 import pointcloud_wgsl from './shaders/point_cloud.wgsl';
+import { Renderer } from './gaussian-splat-app';
 
 export default function get_renderer(
   pc: PointCloud,
   device: GPUDevice,
   presentation_format: GPUTextureFormat,
-  camera_buffer: GPUBuffer) {
+  camera_buffer: GPUBuffer): Renderer {
   const render_shader = device.createShaderModule({code: pointcloud_wgsl});
   const render_pipeline = device.createRenderPipeline({
     label: 'render',

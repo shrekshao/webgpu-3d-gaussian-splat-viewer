@@ -1,8 +1,12 @@
-import { create_camera_uniform_buffer, update_camera_uniform } from './camera';
 import { PointCloud } from './point-cloud';
 import proprocess_wgsl from './shaders/preprocess.wgsl';
 import render_wgsl from './shaders/gaussian.wgsl';
 import { get_sorter } from './sort';
+import { Renderer } from './gaussian-splat-app';
+
+export interface GaussianRenderer extends Renderer {
+  render_settings_buffer: GPUBuffer,
+}
 
 const c_size_render_settings_buffer = 20 * Uint32Array.BYTES_PER_ELEMENT;
 
@@ -12,7 +16,8 @@ export default function get_renderer(
   pc: PointCloud,
   device: GPUDevice,
   presentation_format: GPUTextureFormat,
-  camera_buffer: GPUBuffer) {
+  camera_buffer: GPUBuffer,
+): GaussianRenderer {
   // ===============================================
   //                 preprocess
   // ===============================================
@@ -91,11 +96,12 @@ export default function get_renderer(
   view.setFloat32(12 * 4, 0.3, true); // kernel_size
   view.setFloat32(13 * 4, 0, true); // walltime
   view.setFloat32(14 * 4, 0, true); // scene_extend
-  // console.log(view.getFloat32(8 * 4));
-  console.log(new Float32Array(render_settings_array_buffer));
-  console.log(new Uint32Array(render_settings_array_buffer));
+  // console.log(new Float32Array(render_settings_array_buffer));
+  // console.log(new Uint32Array(render_settings_array_buffer));
   
   device.queue.writeBuffer(render_settings_buffer, 0, render_settings_array_buffer);
+
+
 
   const render_settings_bind_group = device.createBindGroup({
     label: 'render settings',
@@ -245,5 +251,6 @@ export default function get_renderer(
     },
 
     camera_buffer,
+    render_settings_buffer,
   };
 }

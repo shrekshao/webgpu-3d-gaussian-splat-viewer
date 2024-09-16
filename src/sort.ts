@@ -244,6 +244,8 @@ function create_histogram_buffer(keysize: number, device: GPUDevice) {
   });
 }
 
+const num_pass = 4;
+
 export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
   // const keys_per_workgroup = C.histogram_wg_size * C.rs_histogram_block_rows;
   // const workgroup_count = (keysize + keys_per_workgroup - 1) / keys_per_workgroup;
@@ -277,11 +279,8 @@ export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
 
   const histogram_buffer = create_histogram_buffer(keysize, device);
 
-  
   const { scatter_blocks_ru, count_ru_histo } = get_scatter_histogram_sizes(keysize);
-  console.log(scatter_blocks_ru);
-  console.log(count_ru_histo);
-  device.queue.writeBuffer(sort_info_buffer, 0, new Uint32Array([keysize, count_ru_histo, 4, 0, 0]));
+  device.queue.writeBuffer(sort_info_buffer, 0, new Uint32Array([keysize, count_ru_histo, num_pass, 0, 0]));
   device.queue.writeBuffer(sort_dispatch_indirect_buffer, 0, new Uint32Array([scatter_blocks_ru, 1, 1]));
 
   const bind_group = device.createBindGroup({

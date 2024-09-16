@@ -11,12 +11,16 @@ import { default as get_renderer_pointcloud } from './point-cloud-renderer';
 import { Camera, load_camera_presets } from './camera';
 import { CameraControl } from './camera-control';
 
+export interface Renderer {
+  frame: (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => void,
+  camera_buffer: GPUBuffer,
+}
+
 export default async function init(
   canvas: HTMLCanvasElement,
   context: GPUCanvasContext,
   device: GPUDevice
 ) {
-  // const camera_buffer = create_camera_uniform_buffer(device);
   const camera = new Camera(canvas, device);
   const control = new CameraControl(camera);
 
@@ -45,7 +49,6 @@ export default async function init(
   // Tweakpane: easily adding tweak control for parameters.
   const params = {
     gaussian_scaling: 1,
-    // renderer: 'pointcloud',
     renderer: 'gaussian',
   };
 
@@ -53,7 +56,6 @@ export default async function init(
     title: 'Config',
     expanded: true,
   });
-  pane.addInput(params, 'gaussian_scaling', {min: 0, max: 1});
   pane.addInput(params, 'renderer', {
     options: {
       pointcloud: 'pointcloud',
@@ -62,6 +64,17 @@ export default async function init(
   }).on('change', (e) => {
     renderer = renderers[e.value];
   });
+  {
+    const intermediate_gaussian_scale = new Float32Array([1]);
+    pane.addInput(
+      params,
+      'gaussian_scaling',
+      {min: 0, max: 1}
+    ).on('change', (e) => {
+      intermediate_gaussian_scale[0] = e.value;
+      device.queue.writeBuffer(gaussian_renderer.render_settings_buffer, 8 * 4, intermediate_gaussian_scale);
+    });
+  }
 
   const pc = await load(url_model, device);
 
@@ -81,7 +94,7 @@ export default async function init(
     gaussian: gaussian_renderer,
   };
 
-  let renderer = renderers[params.renderer];
+  let renderer: Renderer = renderers[params.renderer];
 
   document.addEventListener('keydown', (event) => {
     switch(event.key) {
