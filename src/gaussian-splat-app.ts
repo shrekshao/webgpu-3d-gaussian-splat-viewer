@@ -2,9 +2,7 @@
 
 // import fragWGSL from './shaders/red.frag.wgsl';
 
-
-import {PLYLoader} from '@loaders.gl/ply';
-import { load, PointCloud } from './point-cloud';
+import { load } from './point-cloud';
 import { Pane } from 'tweakpane';
 import { default as get_renderer_gaussian } from './gaussian-renderer';
 import { default as get_renderer_pointcloud } from './point-cloud-renderer';

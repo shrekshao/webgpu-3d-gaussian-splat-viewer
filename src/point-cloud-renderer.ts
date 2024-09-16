@@ -25,8 +25,6 @@ export default function get_renderer(
     },
   });
 
-  // const camera_buffer = create_camera_uniform_buffer(device);
-
   const camera_bind_group = device.createBindGroup({
     label: 'point cloud camera',
     layout: render_pipeline.getBindGroupLayout(0),

@@ -151,7 +151,24 @@ function create_pipelines(device: GPUDevice) {
       compute: {
         module: module,
         entryPoint: 'zero_histograms',
-        // constants,
+        constants: {
+          histogram_wg_size: C.histogram_wg_size,
+          rs_radix_log2: C.rs_radix_log2,
+          rs_radix_size: C.rs_radix_size,
+          rs_keyval_size: C.rs_keyval_size,
+
+          // // full
+          // histogram_sg_size: C.histogram_sg_size,
+          // histogram_wg_size: C.histogram_wg_size,
+          // rs_radix_log2: C.rs_radix_log2,
+          // rs_radix_size: C.rs_radix_size,
+          // rs_keyval_size: C.rs_keyval_size,
+          // rs_histogram_block_rows: C.rs_histogram_block_rows,
+          // rs_scatter_block_rows: C.rs_scatter_block_rows,
+          // prefix_wg_size: C.prefix_wg_size,
+          // scatter_wg_size: C.scatter_wg_size,
+          // rs_mem_dwords: C.rs_mem_dwords,
+        }
       },
     }),
     histogram: device.createComputePipeline({
@@ -159,7 +176,6 @@ function create_pipelines(device: GPUDevice) {
       compute: {
         module: module,
         entryPoint: 'calculate_histogram',
-        // constants,
       }
     }),
     prefix: device.createComputePipeline({
@@ -167,7 +183,10 @@ function create_pipelines(device: GPUDevice) {
       compute: {
         module: module,
         entryPoint: 'prefix_histogram',
-        // constants,
+        constants: {
+          rs_radix_size: C.histogram_wg_size,
+          prefix_wg_size: C.prefix_wg_size,
+        }
       }
     }),
     scatter_odd: device.createComputePipeline({
@@ -175,7 +194,14 @@ function create_pipelines(device: GPUDevice) {
       compute: {
         module: module,
         entryPoint: 'scatter_odd',
-        // constants,
+        constants: {
+          histogram_sg_size: C.histogram_sg_size,
+          histogram_wg_size: C.histogram_wg_size,
+          rs_radix_log2: C.rs_radix_log2,
+          rs_radix_size: C.rs_radix_size,
+          rs_keyval_size: C.rs_keyval_size,
+          scatter_wg_size: C.scatter_wg_size,
+        }
       }
     }),
     scatter_even: device.createComputePipeline({
@@ -183,7 +209,14 @@ function create_pipelines(device: GPUDevice) {
       compute: {
         module: module,
         entryPoint: 'scatter_even',
-        // constants,
+        constants: {
+          histogram_sg_size: C.histogram_sg_size,
+          histogram_wg_size: C.histogram_wg_size,
+          rs_radix_log2: C.rs_radix_log2,
+          rs_radix_size: C.rs_radix_size,
+          rs_keyval_size: C.rs_keyval_size,
+          scatter_wg_size: C.scatter_wg_size,
+        }
       }
     }),
   };
@@ -247,11 +280,6 @@ function create_histogram_buffer(keysize: number, device: GPUDevice) {
 const num_pass = 4;
 
 export function get_sorter(keysize: number, device: GPUDevice): SortStuff {
-  // const keys_per_workgroup = C.histogram_wg_size * C.rs_histogram_block_rows;
-  // const workgroup_count = (keysize + keys_per_workgroup - 1) / keys_per_workgroup;
-  // // const keys_count_adjusted = keys_per_workgroup * workgroup_count;
-  // const keys_count_adjusted = 1067520;
-
   const keys_per_workgroup = C.histogram_wg_size * C.rs_histogram_block_rows;
   const keys_count_adjusted = (Math.floor((keysize + keys_per_workgroup - 1) / keys_per_workgroup) + 1) * keys_per_workgroup;
 

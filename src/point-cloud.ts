@@ -29,7 +29,6 @@ const c_size_sh_coef =
 
 function build_cov(rot: Quat, scale: Vec3): number[] {
   const r = mat3.fromQuat(rot);
-  // const s = mat3.scaling(scale); // this is 2d scale
   const s = mat3.identity();
   s[0] = scale[0];
   s[5] = scale[1];
@@ -162,22 +161,10 @@ export async function load(url: string, device: GPUDevice) {
     // cov, 6x f16
     const rot = quat.create(rot_1[i], rot_2[i], rot_3[i], rot_0[i]);
     quat.normalize(rot, rot);
-    // console.log([scale_0[i], scale_1[i], scale_2[i]]);
     const scale = vec3.create(Math.exp(scale_0[i]), Math.exp(scale_1[i]), Math.exp(scale_2[i]));
     const cov = build_cov(rot, scale);
     gaussian.set(cov, o + 4);
-
-    // if (i < 3) {
-    //   // console.log(opacity[i]);
-    //   // console.log(scale);
-    //   // console.log(rot);
-    //   console.log(cov);
-    // }
   }
-  // console.log('---------------');
-  // for (let i = 0; i < 30; i++) {
-  //   console.log(gaussian.at(i));
-  // }
   gaussian_3d_buffer.unmap();
 
   // Spherical harmonic function coeffs
@@ -188,7 +175,6 @@ export async function load(url: string, device: GPUDevice) {
     mappedAtCreation: true,
   });
   const sh = new Float16Array(sh_buffer.getMappedRange());
-  // const sh = new Float32Array(sh_buffer.getMappedRange());  // temp test
 
   // dc_0, dc_1, dc_2, rest_0, rest_1, ...
   const sh_coefs = new Array(num_coefs * 3);
@@ -224,11 +210,8 @@ export async function load(url: string, device: GPUDevice) {
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
   });
 
-  
-
   timeLog();
   
-
   return {
     num_points: num_points,
     gaussian_3d_buffer,
@@ -236,23 +219,3 @@ export async function load(url: string, device: GPUDevice) {
     splat_2d_buffer,
   };
 }
-
-// export default class PointCloud {
-//   splat_2d_buffer
-
-
-//   constructor(url: URL, device: GPUDevice) {
-//     // TODO: use web worker
-//     const ply = this.loadPLY(url);
-
-//     this.splat_2d_buffer = device.createBuffer({
-//       label: 
-//     })
-//   }
-
-
-//   async loadPLY(url: URL) {
-//     const ply = await parse(fetch('/scenes/bicycle/bicycle_30000.cleaned.ply'), PLYLoader);
-//     return ply;
-//   }
-// }

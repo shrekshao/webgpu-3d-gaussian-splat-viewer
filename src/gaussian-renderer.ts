@@ -58,8 +58,6 @@ export default function get_renderer(
     ]
   });
 
-  // const camera_buffer = create_camera_uniform_buffer(device);
-
   const camera_bind_group = device.createBindGroup({
     label: 'camera',
     layout: preprocess_pipeline.getBindGroupLayout(0),
@@ -80,7 +78,6 @@ export default function get_renderer(
   });
   const nulling_data = new Uint32Array([0]);
 
-  // TODO: write buffer, on update tweakpane
   const render_settings_buffer = device.createBuffer({
     label: 'render settings',
     size: c_size_render_settings_buffer,
@@ -96,12 +93,8 @@ export default function get_renderer(
   view.setFloat32(12 * 4, 0.3, true); // kernel_size
   view.setFloat32(13 * 4, 0, true); // walltime
   view.setFloat32(14 * 4, 0, true); // scene_extend
-  // console.log(new Float32Array(render_settings_array_buffer));
-  // console.log(new Uint32Array(render_settings_array_buffer));
   
   device.queue.writeBuffer(render_settings_buffer, 0, render_settings_array_buffer);
-
-
 
   const render_settings_bind_group = device.createBindGroup({
     label: 'render settings',
@@ -124,22 +117,7 @@ export default function get_renderer(
     pass.setBindGroup(3, render_settings_bind_group);
     pass.dispatchWorkgroups(preprocess_workgroup_count);
     pass.end();
-
-    // encoder.copyBufferToBuffer(
-    //   sorter.sort_info_buffer,
-    //   0,
-    //   draw_indirect_buffer,
-    //   Uint32Array.BYTES_PER_ELEMENT * 1,
-    //   Uint32Array.BYTES_PER_ELEMENT
-    // );
-  };
-
-  // ===============================================
-  //                   sort
-  // ===============================================
-  const sort = (encoder: GPUCommandEncoder) => {
-    sorter.sort(encoder);
-
+    
     encoder.copyBufferToBuffer(
       sorter.sort_info_buffer,
       0,
@@ -147,6 +125,13 @@ export default function get_renderer(
       Uint32Array.BYTES_PER_ELEMENT * 1,
       Uint32Array.BYTES_PER_ELEMENT
     );
+  };
+
+  // ===============================================
+  //                   sort
+  // ===============================================
+  const sort = (encoder: GPUCommandEncoder) => {
+    sorter.sort(encoder);
   };
 
 
@@ -241,9 +226,6 @@ export default function get_renderer(
   };
 
   return {
-    // preprocess,
-    // sort,
-    // render,
     frame: (encoder: GPUCommandEncoder, texture_view: GPUTextureView) => {
       preprocess(encoder);
       sort(encoder);
