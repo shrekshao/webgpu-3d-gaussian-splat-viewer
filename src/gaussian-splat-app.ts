@@ -37,10 +37,10 @@ export default async function init(
     alphaMode: 'opaque',
   });
 
-  const url_base = '/scenes/bicycle';
-  const url_model = `${url_base}/bicycle_30000.cleaned.ply`;
-  // const url_base = '/scenes/bonsai';
-  // const url_model = `${url_base}/bonsai_30000.ply`;
+  // const url_base = '/scenes/bicycle';
+  // const url_model = `${url_base}/bicycle_30000.cleaned.ply`;
+  const url_base = '/scenes/bonsai';
+  const url_model = `${url_base}/bonsai_30000.ply`;
   const cameras = await load_camera_presets(`${url_base}/cameras.json`);
   camera.set_preset(cameras[0]);
 
